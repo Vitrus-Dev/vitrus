@@ -1,0 +1,31 @@
+{
+  "name": "@vitrus/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Vitrus CLI \u2014 init, site, start, digest, demo.",
+  "bin": {
+    "vitrus": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "vitrus": "bun run src/cli.ts"
+  },
+  "dependencies": {
+    "@vitrus/core": "workspace:*",
+    "@vitrus/server": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://vitrus.dev",
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  }
+}

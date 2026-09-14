@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Runtime data — this holds CUSTOMER CONTENT and is never committed.
+*.db
+*.db-wal
+*.db-shm
+.vitrus/
+data/

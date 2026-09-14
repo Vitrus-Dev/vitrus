@@ -1,0 +1,145 @@
+[
+  {
+    "id": "clean-summary",
+    "allowed": [7, 12.3, 40, 247, 1234],
+    "prose": "247 sessions were recorded in the last 7 days [e1]. Conversion was 12.3% [e2].",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "invented-percentage",
+    "allowed": [7, 40, 247],
+    "prose": "247 sessions were recorded in the last 7 days. Conversion rose 41.7%.",
+    "fabricated": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "ratio-the-model-computed",
+    "allowed": [40, 200],
+    "prose": "40 of 200 sessions came from AI, one fifth of the total. That is 20%.",
+    "fabricated": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "right-citation-wrong-number",
+    "allowed": [247],
+    "prose": "Sessions reached 312 [e1].",
+    "fabricated": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "citations-are-not-numbers",
+    "allowed": [5],
+    "prose": "Traffic sources look balanced [e1, e2, e12]. The largest channel is search with 5 sessions.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "dates-and-times-are-not-numbers",
+    "allowed": [9],
+    "prose": "There were 9 sessions as of 14:30 on 2026-09-12.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "digit-inside-a-path",
+    "allowed": [6],
+    "prose": "The most viewed page was /blog/10-tips, with 6 views.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "european-thousands-separator",
+    "allowed": [1234],
+    "prose": "A total of 1.234 pageviews were recorded.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "us-thousands-separator",
+    "allowed": [1234],
+    "prose": "A total of 1,234 pageviews were recorded.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "mixed-separators",
+    "allowed": [1234.5],
+    "prose": "The average duration was 1.234,5 seconds.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "zero-and-hundred-are-free",
+    "allowed": [],
+    "prose": "No signups arrived: 0. The mobile share is 100%.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "negative-delta",
+    "allowed": [18],
+    "prose": "Visitors are down 18%.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "invented-multiplier",
+    "allowed": [214, 22, 58],
+    "prose": "The error rate went up 2.8 times.",
+    "fabricated": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "causal-claim",
+    "allowed": [18],
+    "prose": "Visitors are down 18%. The last deploy caused the drop.",
+    "fabricated": false,
+    "causal": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "coincidence-language-allowed",
+    "allowed": [18],
+    "prose": "Visitors are down 18%. The drop coincides with the last deploy.",
+    "fabricated": false,
+    "causal": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "theme-release-causality",
+    "allowed": [12],
+    "prose": "Conversion fell 12% because of the new theme release.",
+    "fabricated": false,
+    "causal": true,
+    "expectDropped": 1
+  },
+  {
+    "id": "sentence-without-numbers-is-free",
+    "allowed": [],
+    "prose": "Search traffic appears to dominate and mobile users stand out.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "multiple-fabrications",
+    "allowed": [10],
+    "prose": "There were 10 sessions. 7 of them were mobile. Conversion was 3.4%.",
+    "fabricated": true,
+    "expectDropped": 2
+  },
+  {
+    "id": "rounded-value",
+    "allowed": [42.47],
+    "prose": "The rate sits around 42.5%.",
+    "fabricated": false,
+    "expectDropped": 0
+  },
+  {
+    "id": "digits-in-model-names",
+    "allowed": [3],
+    "prose": "3 sessions arrived from GPT-4 and Claude-3.",
+    "fabricated": false,
+    "expectDropped": 0
+  }
+]

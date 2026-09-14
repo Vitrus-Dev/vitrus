@@ -1,0 +1,31 @@
+{
+  "name": "@vitrus/server",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Vitrus single-process server \u2014 ingest + query API + tracker delivery + the evidence dashboard.",
+  "exports": {
+    ".": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "start": "bun run src/server.ts"
+  },
+  "dependencies": {
+    "@vitrus/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://vitrus.dev",
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  }
+}

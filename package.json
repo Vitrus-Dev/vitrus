@@ -1,0 +1,43 @@
+{
+  "name": "vitrus",
+  "private": true,
+  "type": "module",
+  "description": "Vitrus — open-source, cookie-free web analytics where every number carries the query that produced it.",
+  "homepage": "https://vitrus.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  },
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "scripts": {
+    "dev": "cd packages/server && bun run --hot src/server.ts",
+    "build:tracker": "cd packages/tracker && bun run build.ts",
+    "typecheck": "bun run typecheck:core && bun run typecheck:tracker && bun run typecheck:server && bun run typecheck:cli && bun run typecheck:mcp",
+    "typecheck:core": "cd packages/core && bun run typecheck",
+    "typecheck:tracker": "cd packages/tracker && bun run typecheck",
+    "typecheck:server": "cd packages/server && bun run typecheck",
+    "typecheck:cli": "cd packages/cli && bun run typecheck",
+    "typecheck:mcp": "cd packages/mcp && bun run typecheck",
+    "test": "bun run test:core && bun run test:tracker && bun run test:server && bun run test:mcp",
+    "test:core": "cd packages/core && bun test",
+    "test:tracker": "cd packages/tracker && bun test",
+    "test:server": "cd packages/server && bun test",
+    "test:mcp": "cd packages/mcp && bun test",
+    "eval": "bun run eval:referrer && bun run eval:insight",
+    "eval:referrer": "cd packages/core && bun run eval/ai-referrer/run.ts",
+    "eval:insight": "cd packages/core && bun run eval/insight/run.ts",
+    "gate:tracker-size": "bun run scripts/gate-tracker-size.ts",
+    "gate:core-purity": "bun run scripts/gate-core-purity.ts",
+    "gate:no-deps": "bun run scripts/gate-no-deps.ts",
+    "gates": "bun run typecheck && bun run test && bun run eval && bun run gate:tracker-size && bun run gate:core-purity && bun run gate:no-deps"
+  }
+}

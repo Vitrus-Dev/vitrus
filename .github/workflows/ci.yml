@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # The size gate reads the build output, so the tracker is built first.
+      - name: Build tracker
+        run: bun run build:tracker
+
+      # One command, the same one contributors run locally: typecheck, 189 tests,
+      # two golden-set evals and three build gates.
+      - name: Gates
+        run: bun run gates

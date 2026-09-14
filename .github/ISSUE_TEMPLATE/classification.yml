@@ -1,0 +1,46 @@
+name: Missing AI assistant or crawler
+description: A referrer or bot that Vitrus classifies wrongly, or not at all
+labels: ["classification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These tables go stale as new products launch, which is exactly why this template exists.
+        If you can, send a pull request instead — it is usually a two-line change plus a test case.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it?
+      options:
+        - An AI assistant sending real visitors (a referrer)
+        - An AI crawler reading pages (a bot)
+        - A search engine, SEO tool, link preview or monitor
+    validations:
+      required: true
+
+  - type: input
+    id: identifier
+    attributes:
+      label: The referrer host, or the user agent
+      placeholder: "chat.example.ai  —  or  Mozilla/5.0 (compatible; ExampleBot/1.0)"
+    validations:
+      required: true
+
+  - type: input
+    id: current
+    attributes:
+      label: How Vitrus classifies it today
+      placeholder: "direct — should be ai"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        A link to the product, its bot documentation, or a real request you observed. We add entries
+        based on something verifiable, not on a name that sounds plausible.
+    validations:
+      required: true

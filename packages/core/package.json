@@ -1,0 +1,30 @@
+{
+  "name": "@vitrus/core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Vitrus analytics core \u2014 ingest pipeline, deterministic classifiers, MetricBundle (evidence records), numeric guard, digest. Zero runtime dependencies.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./store": "./src/store/store.ts",
+    "./metrics": "./src/metrics/bundle.ts",
+    "./insight": "./src/insight/compose.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://vitrus.dev",
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  }
+}

@@ -1,0 +1,59 @@
+name: Bug report
+description: Something measured, counted or displayed the wrong thing
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. If the bug is about a **number being wrong**, the most useful
+        thing you can include is the evidence panel: click the number in the dashboard and paste the
+        query and parameters it shows you.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Steps, or better still a failing test case.
+      placeholder: |
+        1. Add a site with vertical "landing"
+        2. Send a pageview with referrer https://…
+        3. The channel comes out as "referral", expected "ai"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: The evidence panel (for wrong numbers)
+      description: The SQL and parameters shown when you click the number.
+      render: sql
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running Vitrus?
+      options:
+        - Self-hosted
+        - Cloud (app.vitrus.dev)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "0.1.0, or the commit sha"
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Bun 1.3.13, macOS 15 / Ubuntu 24.04, behind Cloudflare"

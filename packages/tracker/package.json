@@ -1,0 +1,26 @@
+{
+  "name": "@vitrus/tracker",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Vitrus browser script \u2014 cookie-free, under 3 KB gzipped: pageviews, CTAs, scroll depth, form abandonment, rage clicks, Core Web Vitals and errors.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "build": "bun run build.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git",
+    "directory": "packages/tracker"
+  },
+  "homepage": "https://vitrus.dev",
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  }
+}

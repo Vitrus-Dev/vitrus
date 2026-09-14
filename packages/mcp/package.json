@@ -1,0 +1,31 @@
+{
+  "name": "@vitrus/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Vitrus MCP server \u2014 read-only analytics tools where every answer carries the query that produced it.",
+  "exports": {
+    ".": "./src/server.ts",
+    "./tools": "./src/tools.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@vitrus/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vitrus-Dev/vitrus.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://vitrus.dev",
+  "bugs": {
+    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
+  }
+}

@@ -1,0 +1,48 @@
+[
+  { "id": "chatgpt-referrer", "referrer": "https://chatgpt.com/", "url": "/", "ua": "chrome", "channel": "ai", "source": "chatgpt" },
+  { "id": "chatgpt-utm-only", "referrer": "", "url": "/?utm_source=chatgpt.com", "ua": "chrome", "channel": "ai", "source": "chatgpt" },
+  { "id": "chatgpt-utm-bare", "referrer": "", "url": "/?utm_source=chatgpt", "ua": "chrome", "channel": "ai", "source": "chatgpt" },
+  { "id": "chatgpt-legacy-host", "referrer": "https://chat.openai.com/c/abc", "url": "/", "ua": "chrome", "channel": "ai", "source": "chatgpt" },
+  { "id": "perplexity", "referrer": "https://www.perplexity.ai/search/foo", "url": "/", "ua": "chrome", "channel": "ai", "source": "perplexity" },
+  { "id": "claude", "referrer": "https://claude.ai/chat/1", "url": "/", "ua": "chrome", "channel": "ai", "source": "claude" },
+  { "id": "gemini", "referrer": "https://gemini.google.com/app", "url": "/", "ua": "chrome", "channel": "ai", "source": "gemini" },
+  { "id": "copilot", "referrer": "https://copilot.microsoft.com/", "url": "/", "ua": "chrome", "channel": "ai", "source": "copilot" },
+  { "id": "grok", "referrer": "https://grok.com/", "url": "/", "ua": "chrome", "channel": "ai", "source": "grok" },
+  { "id": "deepseek", "referrer": "https://chat.deepseek.com/", "url": "/", "ua": "chrome", "channel": "ai", "source": "deepseek" },
+  { "id": "ai-with-utm-campaign", "referrer": "https://chatgpt.com/", "url": "/?utm_campaign=bahar", "ua": "chrome", "channel": "ai", "source": "chatgpt" },
+
+  { "id": "google-organic", "referrer": "https://www.google.com/", "url": "/", "ua": "chrome", "channel": "search", "source": "google" },
+  { "id": "google-tr", "referrer": "https://www.google.com.tr/", "url": "/", "ua": "chrome", "channel": "search", "source": "google" },
+  { "id": "google-paid", "referrer": "https://www.google.com/", "url": "/?gclid=abc123", "ua": "chrome", "channel": "paid", "source": "google" },
+  { "id": "bing", "referrer": "https://www.bing.com/search?q=x", "url": "/", "ua": "chrome", "channel": "search", "source": "bing" },
+  { "id": "ddg", "referrer": "https://duckduckgo.com/", "url": "/", "ua": "chrome", "channel": "search", "source": "duckduckgo" },
+  { "id": "brave-search", "referrer": "https://search.brave.com/search?q=x", "url": "/", "ua": "chrome", "channel": "search", "source": "brave" },
+  { "id": "google-news-subdomain", "referrer": "https://news.google.com/", "url": "/", "ua": "chrome", "channel": "search", "source": "google" },
+
+  { "id": "gmail-is-email-not-search", "referrer": "https://mail.google.com/mail/u/0/", "url": "/", "ua": "chrome", "channel": "email", "source": "gmail" },
+  { "id": "outlook", "referrer": "https://outlook.live.com/mail/0/", "url": "/", "ua": "chrome", "channel": "email", "source": "outlook" },
+  { "id": "newsletter-utm", "referrer": "", "url": "/?utm_source=bulten&utm_medium=email", "ua": "chrome", "channel": "email", "source": "bulten" },
+
+  { "id": "hn", "referrer": "https://news.ycombinator.com/item?id=1", "url": "/", "ua": "chrome", "channel": "social", "source": "hackernews" },
+  { "id": "x-shortlink", "referrer": "https://t.co/abc", "url": "/", "ua": "chrome", "channel": "social", "source": "x" },
+  { "id": "reddit", "referrer": "https://www.reddit.com/r/SaaS/comments/x", "url": "/", "ua": "chrome", "channel": "social", "source": "reddit" },
+  { "id": "linkedin", "referrer": "https://www.linkedin.com/feed/", "url": "/", "ua": "chrome", "channel": "social", "source": "linkedin" },
+  { "id": "producthunt-ref", "referrer": "", "url": "/?ref=producthunt", "ua": "chrome", "channel": "referral", "source": "producthunt" },
+  { "id": "facebook-paid", "referrer": "https://l.facebook.com/", "url": "/?fbclid=zzz", "ua": "chrome", "channel": "paid", "source": "facebook" },
+
+  { "id": "unknown-blog", "referrer": "https://blog.acme.dev/yazi", "url": "/", "ua": "chrome", "channel": "referral", "source": "blog.acme.dev" },
+  { "id": "direct", "referrer": "", "url": "/", "ua": "chrome", "channel": "direct", "source": "" },
+  { "id": "internal-nav", "referrer": "https://example.com/fiyat", "url": "/kayit", "ua": "chrome", "channel": "internal", "source": "" },
+  { "id": "internal-www", "referrer": "https://www.example.com/", "url": "/", "ua": "chrome", "channel": "internal", "source": "" },
+
+  { "id": "gptbot-crawler", "referrer": "", "url": "/blog", "ua": "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)", "channel": "direct", "source": "", "bot": "ai-crawler" },
+  { "id": "claudebot-crawler", "referrer": "", "url": "/", "ua": "Mozilla/5.0 (compatible; ClaudeBot/1.0)", "channel": "direct", "source": "", "bot": "ai-crawler" },
+  { "id": "perplexitybot-crawler", "referrer": "", "url": "/", "ua": "Mozilla/5.0 (compatible; PerplexityBot/1.0)", "channel": "direct", "source": "", "bot": "ai-crawler" },
+  { "id": "chatgpt-user-agent-crawler", "referrer": "https://chatgpt.com/", "url": "/", "ua": "Mozilla/5.0 (compatible; ChatGPT-User/1.0)", "channel": "ai", "source": "chatgpt", "bot": "ai-crawler" },
+  { "id": "googlebot-not-ai", "referrer": "", "url": "/", "ua": "Mozilla/5.0 (compatible; Googlebot/2.1)", "channel": "direct", "source": "", "bot": "search-crawler" },
+  { "id": "ahrefs-seo", "referrer": "", "url": "/", "ua": "Mozilla/5.0 (compatible; AhrefsBot/7.0)", "channel": "direct", "source": "", "bot": "seo" },
+  { "id": "slack-preview", "referrer": "", "url": "/", "ua": "Slackbot-LinkExpanding 1.0", "channel": "direct", "source": "", "bot": "preview" },
+  { "id": "curl", "referrer": "", "url": "/", "ua": "curl/8.4.0", "channel": "direct", "source": "", "bot": "generic" },
+  { "id": "empty-ua-is-bot", "referrer": "", "url": "/", "ua": "", "channel": "direct", "source": "", "bot": "generic" },
+  { "id": "human-iphone-not-bot", "referrer": "", "url": "/", "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", "channel": "direct", "source": "", "bot": "" }
+]

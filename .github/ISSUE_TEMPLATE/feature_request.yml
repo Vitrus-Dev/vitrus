@@ -1,0 +1,34 @@
+name: Feature request
+description: Something Vitrus should be able to answer and cannot
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two things are permanently out of scope and will be declined: **session replay** and
+        **ad-platform attribution (ROAS/CPA)**. The reasoning is in
+        [CONTRIBUTING.md](https://github.com/Vitrus-Dev/vitrus/blob/main/CONTRIBUTING.md).
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What question can you not answer today?
+      description: Describe the question about your site, not the UI you imagine.
+      placeholder: "Which blog posts bring visitors who later sign up?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What do you do instead right now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What would the evidence be?
+      description: |
+        Every number in Vitrus carries the query that produced it. If you know roughly what would have
+        to be counted, say so — it usually shortens the discussion considerably.
