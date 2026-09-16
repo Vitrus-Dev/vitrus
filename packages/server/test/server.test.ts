@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { SqliteStore, type Site } from "@vitrus/core";
+import { dashboardHtml } from "../src/dashboard.ts";
 import { clientIp, createHandler } from "../src/server.ts";
 
 const SITE: Site = { id: "demo", name: "Demo", domain: "example.com", vertical: "landing", createdAt: 0 };
@@ -119,5 +120,42 @@ describe("the HTTP surface", () => {
   test("bilinmeyen yol 404 JSON", async () => {
     const { handle } = await harness();
     expect((await handle(new Request("http://localhost/yok"))).status).toBe(404);
+  });
+});
+
+describe("the self-hosted dashboard shows the whole engine", () => {
+  const html = dashboardHtml([
+    { id: "s1", name: "Site", domain: "site.example", vertical: "landing", createdAt: 0 },
+  ]);
+
+  test("it renders the sections the documentation promises", () => {
+    // The open-core claim is that no metric is held back from this repository.
+    // The engine always computed these; for a while only the screen was missing,
+    // which makes the claim look false to the one person who checked.
+    // The headings are built by the page's own script from this table, so the
+    // table is what there is to assert on.
+    for (const section of ["Traffic", "AI", "Behaviour", "Performance", "Errors", "Audience"]) {
+      expect(html, `section missing: ${section}`).toContain(`["${section}",`);
+    }
+  });
+
+  test("Web Vitals and error grouping are on the page, not only in the API", () => {
+    for (const m of ["vitals.p75", "vitals.slow_pages", "errors.top", "errors.browsers"]) {
+      expect(html, `metric missing: ${m}`).toContain(m);
+    }
+  });
+
+  test("a metric no section claims still renders rather than vanishing", () => {
+    expect(html).toContain('"More"');
+    expect(html).toContain("listed[e.metric]");
+  });
+
+  test("every table keeps its evidence control", () => {
+    expect(html).toContain("showEvidence");
+    expect(html).toContain("Query that ran");
+  });
+
+  test("row values are escaped, never interpolated raw", () => {
+    expect(html).toContain("escapeHtml(String(r[c]");
   });
 });

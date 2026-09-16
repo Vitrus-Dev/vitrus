@@ -1,7 +1,7 @@
 // packages/core/src/insight/llm.ts
 // The LLM layer — OPTIONAL and CONSTRAINED.
 //
-// Three rules (PIVOT2.md §1):
+// Three rules:
 //   1. The LLM does not produce numbers. It is handed only the computed evidence bundle.
 //   2. Its output goes through the guard; any sentence with an unsupported number is dropped.
 //   3. If the guard drops anything, we FALL BACK to the deterministic text and the

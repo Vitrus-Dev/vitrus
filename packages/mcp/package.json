@@ -1,9 +1,9 @@
 {
   "name": "@vitrus/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus MCP server \u2014 read-only analytics tools where every answer carries the query that produced it.",
+  "description": "Vitrus MCP server — read-only analytics tools where every answer carries the query that produced it.",
   "exports": {
     ".": "./src/server.ts",
     "./tools": "./src/tools.ts"

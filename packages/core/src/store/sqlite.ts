@@ -84,8 +84,38 @@ export class SqliteStore implements Store {
     this.db.exec("PRAGMA synchronous = NORMAL;");
     this.db.exec("PRAGMA foreign_keys = ON;");
     this.db.exec(DDL);
+    this.addMissingColumns();
     const current = await this.getMeta("schema_version");
     if (current === null) await this.setMeta("schema_version", SCHEMA_VERSION);
+  }
+
+  /**
+   * Columns added to a table AFTER it first shipped.
+   *
+   * `CREATE TABLE IF NOT EXISTS` is a no-op on a database that already has the
+   * table — it does NOT reconcile the columns. So a column added to the DDL
+   * later exists on every fresh install and on none of the old ones, and the
+   * gap only shows up when something writes to it.
+   *
+   * This is not hypothetical. `sites.privacy_mode` was added to the DDL, and on
+   * the production database — created before it — every attempt to add a site
+   * failed with `table sites has no column named privacy_mode`. The API
+   * answered `internal_error`, the dashboard showed a generic failure, and the
+   * feature was simply broken for a day before anyone worked out why.
+   *
+   * Every entry here must be nullable or carry a DEFAULT: SQLite cannot add a
+   * NOT NULL column without one to a table that already has rows.
+   */
+  private addMissingColumns(): void {
+    const ADDITIONS: ReadonlyArray<{ table: string; column: string; ddl: string }> = [
+      { table: "sites", column: "privacy_mode", ddl: "TEXT NOT NULL DEFAULT 'standard'" },
+    ];
+    for (const a of ADDITIONS) {
+      const cols = this.db.query<{ name: string }, []>(`PRAGMA table_info(${a.table})`).all();
+      if (cols.length === 0) continue; // table not created yet; the DDL will make it complete
+      if (cols.some((c) => c.name === a.column)) continue;
+      this.db.exec(`ALTER TABLE ${a.table} ADD COLUMN ${a.column} ${a.ddl}`);
+    }
   }
 
   async close(): Promise<void> {

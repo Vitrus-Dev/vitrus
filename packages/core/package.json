@@ -1,9 +1,9 @@
 {
   "name": "@vitrus/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus analytics core \u2014 ingest pipeline, deterministic classifiers, MetricBundle (evidence records), numeric guard, digest. Zero runtime dependencies.",
+  "description": "Vitrus analytics core — ingest pipeline, deterministic classifiers, MetricBundle (evidence records), numeric guard, digest. Zero runtime dependencies.",
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store/store.ts",

@@ -38,6 +38,8 @@
     "gate:tracker-size": "bun run scripts/gate-tracker-size.ts",
     "gate:core-purity": "bun run scripts/gate-core-purity.ts",
     "gate:no-deps": "bun run scripts/gate-no-deps.ts",
-    "gates": "bun run typecheck && bun run test && bun run eval && bun run gate:tracker-size && bun run gate:core-purity && bun run gate:no-deps"
+    "gates": "bun run typecheck && bun run test && bun run eval && bun run gate:tracker-size && bun run gate:core-purity && bun run gate:no-deps && bun run gate:inline-js",
+    "gate:inline-js": "bun run scripts/gate-inline-js.ts",
+    "preview": "bun run scripts/build-preview-svg.ts"
   }
 }

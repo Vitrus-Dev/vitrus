@@ -1,7 +1,7 @@
 // packages/core/src/metrics/bundle.ts
 // MetricBundle — the product's backbone.
 //
-// The rule (PIVOT2.md §1, I1): NUMBERS DO NOT COME OUT OF AN LLM. They are
+// The rule: NUMBERS DO NOT COME OUT OF AN LLM. They are
 // computed here first, by deterministic queries; the LLM is handed only this
 // bundle and is FORBIDDEN from producing a new number (insight/guard.ts enforces
 // this fail-closed).

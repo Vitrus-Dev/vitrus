@@ -1,9 +1,9 @@
 {
   "name": "@vitrus/server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus single-process server \u2014 ingest + query API + tracker delivery + the evidence dashboard.",
+  "description": "Vitrus single-process server — ingest + query API + tracker delivery + the evidence dashboard.",
   "exports": {
     ".": "./src/server.ts"
   },

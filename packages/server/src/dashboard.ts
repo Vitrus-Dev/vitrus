@@ -3,6 +3,17 @@
 // Its one distinguishing job: EVERY NUMBER HAS a "show the evidence" control.
 // Evidence = the SQL that ran + its parameters + the raw rows. Not an
 // explanation of the query — the query itself.
+//
+// This page renders EVERY metric in the bundle, not a chosen subset. That is a
+// deliberate constraint rather than a feature: the open-core claim is that no
+// metric is held back from this repository, and a self-hosted dashboard showing
+// six cards while the documentation lists Web Vitals and error grouping makes
+// that claim look false to the one person who checked. The engine had all of
+// it; only the screen was missing.
+//
+// The section list below is therefore derived from the bundle at runtime — a
+// metric added to `metrics/queries.ts` appears here without anyone remembering
+// to come back.
 
 import type { Site } from "@vitrus/core";
 
@@ -57,6 +68,11 @@ export function dashboardHtml(sites: Site[]): string {
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
   th { color: var(--dim); font-weight: 500; }
   .empty { color: var(--dim); padding: 40px 0; text-align: center; }
+  h2.sec { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--dim); margin: 34px 0 12px; font-weight: 600; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .tbl { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; overflow-x: auto; }
+  .tbl h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; font-weight: 500; }
+  .tbl td, .tbl th { white-space: nowrap; }
   footer { color: var(--dim); font-size: 12px; padding: 24px; text-align: center; }
   code { font-family: ui-monospace, monospace; }
 </style>
@@ -77,6 +93,7 @@ export function dashboardHtml(sites: Site[]): string {
     <h2>What happened → why → what to do</h2>
     <div id="lines"><div class="empty">loading…</div></div>
   </div>
+  <div id="tables"></div>
 </main>
 <footer>Click the <code>e#</code> badge next to any number to see the query that ran and the raw rows. Nothing is invented.</footer>
 
@@ -86,7 +103,22 @@ export function dashboardHtml(sites: Site[]): string {
 </dialog>
 
 <script>
-const CARDS = ["visitors.unique","sessions.total","pageviews.total","ai.sessions","ai.crawler.hits","bounce.rate"];
+const CARDS = ["visitors.unique","sessions.total","pageviews.total","visit.duration",
+               "ai.sessions","ai.crawler.hits","bounce.rate","errors.total"];
+
+/* Row metrics, grouped the way somebody reads them rather than the order the
+   query file happens to declare them. Anything in the bundle that is not listed
+   here still renders, under "More" — so a new metric is never invisible. */
+const SECTIONS = [
+  ["Traffic",     ["pages.top","entry.pages","exit.pages","channels.sessions","referrers.top","utm.campaigns"]],
+  ["AI",          ["ai.sources","ai.landing_pages","ai.crawler.pages"]],
+  ["Behaviour",   ["events.top","form.abandon_fields"]],
+  ["Performance", ["vitals.p75","vitals.slow_pages"]],
+  ["Errors",      ["errors.top","errors.browsers"]],
+  ["Audience",    ["countries.sessions","devices.sessions","browsers.sessions","os.sessions",
+                   "languages.sessions","screens.sessions"]]
+];
+
 let bundle = null;
 
 function fmt(n, unit) {
@@ -106,6 +138,41 @@ async function load() {
   bundle = b;
   renderCards(b);
   renderLines(d.digest);
+  renderTables(b);
+}
+
+function renderTables(b) {
+  const byMetric = {};
+  b.evidence.forEach(e => { byMetric[e.metric] = e; });
+
+  const listed = {};
+  SECTIONS.forEach(s => s[1].forEach(m => { listed[m] = true; }));
+  // Anything the bundle produced that no section claims. Without this a metric
+  // added to the engine would simply not exist on the screen, which is the
+  // failure this page was just fixed for.
+  const extra = b.evidence
+    .filter(e => e.rows && e.rows.length && !listed[e.metric])
+    .map(e => e.metric);
+
+  const groups = SECTIONS.concat(extra.length ? [["More", extra]] : []);
+  const out = groups.map(([title, metrics]) => {
+    const tables = metrics.map(m => table(byMetric[m])).filter(Boolean).join("");
+    return tables ? '<h2 class="sec">' + title + "</h2><div class=\\"grid\\">" + tables + "</div>" : "";
+  }).join("");
+
+  document.getElementById("tables").innerHTML = out ||
+    '<div class="empty">No breakdowns yet — they appear as soon as there is traffic.</div>';
+}
+
+function table(e) {
+  if (!e || !e.rows || !e.rows.length) return "";
+  const cols = Object.keys(e.rows[0]);
+  return '<div class="tbl"><h3>' + escapeHtml(e.label) +
+    ' <button class="chip" onclick="showEvidence(\\'' + e.id + '\\')">' + e.id + "</button></h3>" +
+    "<table><tr>" + cols.map(c => "<th>" + escapeHtml(c) + "</th>").join("") + "</tr>" +
+    e.rows.slice(0, 10).map(r =>
+      "<tr>" + cols.map(c => "<td>" + escapeHtml(String(r[c] === null ? "—" : r[c])) + "</td>").join("") + "</tr>"
+    ).join("") + "</table></div>";
 }
 
 function renderCards(b) {

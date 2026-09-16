@@ -1,9 +1,9 @@
 {
   "name": "@vitrus/tracker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus browser script \u2014 cookie-free, under 3 KB gzipped: pageviews, CTAs, scroll depth, form abandonment, rage clicks, Core Web Vitals and errors.",
+  "description": "Vitrus browser script — cookie-free, under 3 KB gzipped: pageviews, CTAs, scroll depth, form abandonment, rage clicks, Core Web Vitals and errors.",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",

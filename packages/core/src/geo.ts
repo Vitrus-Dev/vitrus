@@ -1,7 +1,7 @@
 // packages/core/src/geo.ts
 // Country detection — WITHOUT a GeoIP database.
 //
-// DECISION (PIVOT2.md): we do not bundle a MaxMind/DB-IP style database. A
+// DECISION: we do not bundle a MaxMind/DB-IP style database. A
 // 60+ MB file, a monthly update burden and (with MaxMind) a mandatory account
 // and licence key each break the "one-command install, zero dependencies"
 // promise on their own.
