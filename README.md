@@ -89,25 +89,31 @@ kind of unverifiable claim this project was built to stop making.
 | Services to install | — | Postgres + ClickHouse | Postgres or MySQL | Postgres + ClickHouse | Postgres + ClickHouse + Redis | **none** |
 | Tracker size | ~28 KB | ~1 KB | ~2 KB | ~18 KB | ~12 KB | **2.4 KB** |
 | AI assistants as a channel | ✗ | ✓ | ✓ | ✓ | ✓ | **✓** |
-| **Which pages AI crawlers read, counted apart from humans** | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Crawler reads separated from the humans they send | ✗ | ✗ | ✗ | **✓** | ✗ | **✓** |
 | **The query behind every number, in the UI** | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
 | **AI sentences dropped when the number is unprovable** | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
-| Session replay | ✗ | ✗ | ✗ | **✓** | ✗ | ✗ *(deliberate)* |
+| Session replay | ✗ | ✗ | **✓** | **✓** | ✗ | ✗ *(deliberate)* |
 | Ad-platform attribution (ROAS) | **✓** | ✗ | ✗ | ✗ | ✗ | ✗ *(deliberate)* |
 | City-level geography | **✓** | **✓** | **✓** | **✓** | **✓** | country only |
 | Comfortable at hundreds of millions of events/month | **✓** | **✓** | **✓** | **✓** | **✓** | ~1M/month per box |
 
-**When to pick something else.** If you need session replay, Rybbit has it and we are not going to
-build it. If your reporting is tied to Google or Meta ad spend, GA4 is the only tool that closes that
+**When to pick something else.** If you need session replay or heatmaps, Umami and Rybbit have them
+and we are not going to build either. If your reporting is tied to Google or Meta ad spend, GA4 is the only tool that closes that
 loop. If you want feature flags and uptime checks in the same product, that is Databuddy. If city-level
 geography matters, everyone else bundles a GeoIP database and we deliberately do not. And if you are
 ingesting hundreds of millions of events a month, take a ClickHouse-backed tool — our embedded
 database is what makes the zero-service install possible, and it is also its ceiling.
 
-Note on the AI row: Plausible, Umami, Rybbit and Databuddy all group AI assistants as a traffic
-source, and they do it well. The distinction we are claiming is narrower and it is the row below it —
-separating the *crawler that read you* from the *human it sent*, and telling you which of your pages
-the crawlers are actually reading. That is the feedback loop for GEO work, and nobody else reports it.
+Note on the AI rows, corrected 16 September 2026: an earlier version of this table claimed that
+nobody else separates the crawler that read you from the human it sent. That was wrong — Rybbit's
+`/api/sites/:site/bots/ai-summary` does exactly this, per AI operator. Plausible, Umami, Rybbit and
+Databuddy all group AI assistants as a traffic source too, and they do it well.
+
+What is still ours: we report the crawler side **per page** rather than per operator, which is the
+granularity GEO work actually needs — and, like every other number here, both halves carry the query
+that produced them. We also do not draw a line between the two: "GPTBot read /pricing 84 times and 3
+sessions arrived from ChatGPT on /pricing" is a coincidence in time, and the digest is forbidden from
+calling it a cause.
 
 Longer write-ups, one per tool: [vitrus.dev/compare](https://vitrus.dev/compare).
 
