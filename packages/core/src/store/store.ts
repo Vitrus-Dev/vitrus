@@ -1,7 +1,7 @@
 // packages/core/src/store/store.ts
 // The storage interface.
 //
-// DECISION (a deliberate deviation from the original plan): it said "start with
+// DECISION: the roadmap said "start with
 // Postgres"; we start with SQLite. The rationale: the product's first promise is
 // a genuinely one-command install, and with SQLite the number of services to
 // install is ZERO (bun:sqlite is embedded). That is more than enough for the

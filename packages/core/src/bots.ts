@@ -2,8 +2,19 @@
 // Bot detection — DETERMINISTIC, a versioned table. No LLM.
 //
 // The critical distinction (most tools conflate these):
-//   AI CRAWLER  = GPTBot/ClaudeBot/PerplexityBot → READS the site, no human present. It is a bot.
-//   AI REFERRAL = a real browser with a chatgpt.com referrer → brings a HUMAN. It is NOT a bot.
+//   AI CRAWLER  = GPTBot/ClaudeBot/PerplexityBot → READS the site in bulk, nobody waiting. A bot.
+//   AI AGENT    = ChatGPT-User/Perplexity-User → fetches ONE page because a person just asked.
+//                 A human is waiting, but never lands on your site.
+//   AI REFERRAL = a real browser with a chatgpt.com referrer → brings a HUMAN. NOT a bot.
+//
+// And a fourth case this table CANNOT see: an agentic browser (ChatGPT Atlas,
+// OpenAI Operator) driving a real Chrome session on someone's behalf. It sends
+// an ordinary Chrome user-agent — observed verbatim as
+// "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) … Chrome/138.0.0.0 Safari/537.36" —
+// so no substring can name it. What it DOES send is `Signature-Agent:
+// "https://chatgpt.com"` with an RFC 9421 signature. That is the only reliable
+// handle, and it is why agent sessions are identified by agent.ts rather than
+// by anything in this file.
 // Show them together and the "I have AI traffic" claim is both inflated and misread.
 //
 // The table version is deliberately part of the data model: a classification
@@ -12,7 +23,7 @@
 
 import type { BotKind } from "./types.ts";
 
-export const BOT_TABLE_VERSION = "2026-09-13";
+export const BOT_TABLE_VERSION = "2026-09-19";
 
 export interface BotRule {
   /** Lower-case substring searched for inside the UA, or a regex. */
@@ -26,13 +37,13 @@ export const BOT_RULES: readonly BotRule[] = [
   // — AI crawlers / model training & retrieval agents —
   { match: "gptbot", name: "GPTBot", kind: "ai-crawler" },
   { match: "oai-searchbot", name: "OAI-SearchBot", kind: "ai-crawler" },
-  { match: "chatgpt-user", name: "ChatGPT-User", kind: "ai-crawler" },
+  { match: "chatgpt-user", name: "ChatGPT-User", kind: "ai-agent" },
   { match: "claudebot", name: "ClaudeBot", kind: "ai-crawler" },
   { match: "claude-web", name: "Claude-Web", kind: "ai-crawler" },
-  { match: "claude-user", name: "Claude-User", kind: "ai-crawler" },
+  { match: "claude-user", name: "Claude-User", kind: "ai-agent" },
   { match: "anthropic-ai", name: "anthropic-ai", kind: "ai-crawler" },
   { match: "perplexitybot", name: "PerplexityBot", kind: "ai-crawler" },
-  { match: "perplexity-user", name: "Perplexity-User", kind: "ai-crawler" },
+  { match: "perplexity-user", name: "Perplexity-User", kind: "ai-agent" },
   { match: "google-extended", name: "Google-Extended", kind: "ai-crawler" },
   { match: "googleother", name: "GoogleOther", kind: "ai-crawler" },
   { match: "bytespider", name: "Bytespider", kind: "ai-crawler" },

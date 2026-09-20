@@ -47,6 +47,41 @@ function inlineScripts(html: string): string[] {
 let failures = 0;
 let checked = 0;
 
+/**
+ * Parse, and say WHERE it broke.
+ *
+ * `new Function(src)` answers the yes/no question but reports "Unexpected EOF"
+ * with no position, and an unterminated string makes every later line look
+ * wrong — the first version of this gate guessed the line by re-parsing
+ * prefixes and pointed three times at the line AFTER the real mistake. Bun's
+ * transpiler parses the same grammar and hands back the line, the column and
+ * the source text, so the gate now names the character instead of the
+ * neighbourhood.
+ */
+const transpiler = new Bun.Transpiler({ loader: "js" });
+
+interface ParseFailure {
+  message: string;
+  line?: number;
+  column?: number;
+  lineText?: string;
+}
+
+function parseFailure(src: string): ParseFailure | null {
+  try {
+    transpiler.transformSync(src);
+    return null;
+  } catch (e) {
+    const err = e as { message?: string; position?: { line?: number; column?: number; lineText?: string } };
+    return {
+      message: err.message ?? String(e),
+      line: err.position?.line,
+      column: err.position?.column,
+      lineText: err.position?.lineText,
+    };
+  }
+}
+
 for (const page of PAGES) {
   const scripts = inlineScripts(page.html);
   if (scripts.length === 0) {
@@ -55,24 +90,14 @@ for (const page of PAGES) {
   }
   for (const [i, src] of scripts.entries()) {
     checked++;
-    try {
-      // `new Function` only PARSES; it does not run the code.
-      new Function(src);
-    } catch (e) {
-      failures++;
-      const msg = (e as Error).message;
-      console.log(`  ✗ ${page.name} script#${i + 1}: ${msg}`);
-      // Locate the offending line: parse incrementally and report where it first breaks.
-      const lines = src.split("\n");
-      for (let n = 1; n <= lines.length; n++) {
-        try {
-          new Function(lines.slice(0, n).join("\n"));
-        } catch (inner) {
-          if ((inner as Error).message === msg) {
-            console.log(`     ↳ line ${n}: ${lines[n - 1]?.trim().slice(0, 120)}`);
-            break;
-          }
-        }
+    const fail = parseFailure(src);
+    if (!fail) continue;
+    failures++;
+    console.log(`  ✗ ${page.name} script#${i + 1}: ${fail.message}`);
+    if (fail.line !== undefined) {
+      console.log(`     ↳ line ${fail.line}, column ${fail.column}: ${fail.lineText?.trim().slice(0, 140)}`);
+      if (fail.column !== undefined && fail.lineText) {
+        console.log(`       ${" ".repeat(Math.max(0, fail.column - fail.lineText.length + fail.lineText.trimStart().length))}^`);
       }
     }
   }

@@ -13,7 +13,7 @@ const NOW = Date.UTC(2026, 8, 12, 12, 0, 0);
 const FROM = NOW - 7 * DAY;
 
 const STEPS = [
-  { type: "page" as const, value: "/", label: "Ana sayfa" },
+  { type: "page" as const, value: "/", label: "Home" },
   { type: "event" as const, value: "cta_click", label: "CTA" },
   { type: "event" as const, value: "signup", label: "Signup" },
 ];
@@ -50,11 +50,11 @@ describe("validateSteps", () => {
 describe("buildFunnelSql", () => {
   test("step values are NEVER embedded in the SQL — all are parameters", () => {
     const { sql } = buildFunnelSql([
-      { type: "page", value: "/gizli-sayfa" },
-      { type: "event", value: "gizli_olay" },
+      { type: "page", value: "/secret-page" },
+      { type: "event", value: "secret_event" },
     ]);
-    expect(sql).not.toContain("/gizli-sayfa");
-    expect(sql).not.toContain("gizli_olay");
+    expect(sql).not.toContain("/secret-page");
+    expect(sql).not.toContain("secret_event");
     expect((sql.match(/\?/g) ?? []).length).toBe(8); // 2 steps × 4 parameters
   });
 

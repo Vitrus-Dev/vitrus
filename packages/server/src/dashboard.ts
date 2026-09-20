@@ -104,7 +104,8 @@ export function dashboardHtml(sites: Site[]): string {
 
 <script>
 const CARDS = ["visitors.unique","sessions.total","pageviews.total","visit.duration",
-               "ai.sessions","ai.crawler.hits","bounce.rate","errors.total"];
+               "ai.sessions","ai.crawler.hits","agent.sessions","bots.suspected",
+               "bounce.rate","errors.total"];
 
 /* Row metrics, grouped the way somebody reads them rather than the order the
    query file happens to declare them. Anything in the bundle that is not listed
@@ -112,6 +113,9 @@ const CARDS = ["visitors.unique","sessions.total","pageviews.total","visit.durat
 const SECTIONS = [
   ["Traffic",     ["pages.top","entry.pages","exit.pages","channels.sessions","referrers.top","utm.campaigns"]],
   ["AI",          ["ai.sources","ai.landing_pages","ai.crawler.pages"]],
+  ["Agents",      ["agent.operators","agent.pages","agent.events",
+                   "agents.by_signer","agents.unverified_bots"]],
+  ["Traffic quality", ["bots.signal_rules"]],
   ["Behaviour",   ["events.top","form.abandon_fields"]],
   ["Performance", ["vitals.p75","vitals.slow_pages"]],
   ["Errors",      ["errors.top","errors.browsers"]],
@@ -177,7 +181,15 @@ function table(e) {
 
 function renderCards(b) {
   const byMetric = Object.fromEntries(b.evidence.map(e => [e.metric, e]));
-  document.getElementById("cards").innerHTML = CARDS.map(m => {
+  /* The same safety net the tables have, which the cards did not: a scalar the
+     engine computes but CARDS does not name was invisible here, while a rows
+     metric in the same position fell through to "More". Two catch-alls, or the
+     open-core claim only holds for half the bundle. */
+  const extra = b.evidence
+    .filter(e => (!e.rows || !e.rows.length) && CARDS.indexOf(e.metric) === -1 &&
+                 e.metric !== "timeseries" && e.value !== null && e.value !== undefined)
+    .map(e => e.metric);
+  document.getElementById("cards").innerHTML = CARDS.concat(extra).map(m => {
     const e = byMetric[m]; if (!e) return "";
     const delta = (e.deltaPct === null || e.deltaPct === undefined) ? "" :
       '<div class="delta ' + (e.deltaPct >= 0 ? "up" : "down") + '">' + (e.deltaPct >= 0 ? "▲" : "▼") + " " + fmt(Math.abs(e.deltaPct), "percent") + "</div>";

@@ -8,7 +8,9 @@
 // metrics are always computed with a `bot_kind = ''` filter — the risk of the
 // two mixing is closed off at the query layer, not at ingest.
 
+import { agentTrust, verifyAgent, type AgentKeys, type AgentVerdict } from "./agent.ts";
 import { detectBot } from "./bots.ts";
+import { headerSignals, score, serializeSignals } from "./signals.ts";
 import { classifyReferrer, parseUtm } from "./referrers.ts";
 import type { RawEvent, RequestContext, StoredEvent } from "./types.ts";
 import { parseUa } from "./ua.ts";
@@ -16,6 +18,24 @@ import { SESSION_WINDOW_MS, identityId, visitorId } from "./visitor.ts";
 import type { Store } from "./store/store.ts";
 import { validateEvent } from "./validate.ts";
 import { applyToContext, applyToRaw, applyToStored, blockedByDoNotTrack, policyFor } from "./privacy.ts";
+
+/**
+ * Everything the ORIGIN saw about the request, when the caller is a server.
+ *
+ * The browser beacon can supply none of this — a Web Bot Auth signature lives
+ * on the page request, which JavaScript never sees. So these arrive only from
+ * the server-side ingest path, and their absence is the normal case.
+ */
+export interface AgentContext {
+  /** Verbatim request headers, lower-cased keys. */
+  headers?: Record<string, string | undefined>;
+  /** The host the request was addressed to — what "@authority" must equal. */
+  authority?: string;
+  method?: string;
+  path?: string;
+  /** The operator key cache. Without it nothing can be verified. */
+  keys?: AgentKeys;
+}
 
 export interface IngestOptions {
   /** The secret salt for the visitor hash. Generated at install time, kept in the meta table. */
@@ -34,7 +54,17 @@ export type IngestResult =
 export function splitUrl(raw: string, fallbackHost = "localhost"): { path: string; query: string; host: string } {
   let u: URL;
   try {
-    u = new URL(raw.includes("://") ? raw : `https://${fallbackHost}${raw.startsWith("/") ? "" : "/"}${raw}`);
+    // A protocol-relative reference ("//host/path") is a URL, not a path: left
+    // alone it was stored as the literal path "//host/path", which then appears
+    // in the top-pages table as a page that does not exist. The browser script
+    // sends `location.href` and never produces one, but server-side ingest
+    // takes a url from the caller, and some frameworks hand out exactly this.
+    const absolute = raw.includes("://")
+      ? raw
+      : raw.startsWith("//")
+        ? `https:${raw}`
+        : `https://${fallbackHost}${raw.startsWith("/") ? "" : "/"}${raw}`;
+    u = new URL(absolute);
   } catch {
     return { path: "/", query: "", host: fallbackHost };
   }
@@ -70,6 +100,30 @@ export class Ingestor {
     ctx = applyToContext(ctx, policy);
 
     const bot = detectBot(ctx.userAgent);
+
+    // A user-agent is the client's sentence about itself; a signature is proof.
+    // Verification only ever PROMOTES a label (see agent.ts) — a missing
+    // signature never makes a visitor suspicious, because almost nothing signs
+    // yet and "unsigned means fake" would be a second unprovable claim.
+    let agent: AgentVerdict | null = null;
+    const agentCtx = (ctx.agent ?? null) as AgentContext | null;
+
+    // Layer two: does this request LOOK like the browser it claims to be? Only
+    // recorded — it changes no number on its own (see signals.ts).
+    const signals = headerSignals({
+      headers: (agentCtx?.headers ?? {}) as Record<string, string | undefined>,
+      userAgent: ctx.userAgent,
+    });
+    if (agentCtx?.keys && agentCtx.headers) {
+      agent = await verifyAgent({
+        headers: agentCtx.headers,
+        authority: agentCtx.authority ?? site?.domain ?? ctx.host ?? "",
+        method: agentCtx.method,
+        path: agentCtx.path,
+        now: ctx.now,
+        keys: agentCtx.keys,
+      });
+    }
     const ua = parseUa(ctx.userAgent);
     const { path, query, host } = splitUrl(raw.url, site?.domain || ctx.host || "localhost");
     const utm = parseUtm(query);
@@ -113,6 +167,10 @@ export class Ingestor {
       identity: identityId({ secret: this.opts.secret, siteId: raw.site, raw: raw.identity ?? "" }),
       botKind: bot.kind,
       botName: bot.name,
+      agentTrust: agent ? agentTrust(bot, agent) : bot.isBot ? "claimed" : "human",
+      agentSigner: agent?.trust === "verified" ? agent.signer : "",
+      botSignals: serializeSignals(signals),
+      botScore: score(signals),
       props: { ...(raw.props ?? {}), _signal: ref.signal },
     };
 

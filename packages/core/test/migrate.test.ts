@@ -82,3 +82,83 @@ describe("adding a column to a table that already shipped", () => {
     await store.close();
   });
 });
+
+describe("a legacy events table", () => {
+  /** The events table as it was BEFORE agent_trust and agent_signer existed. */
+  function legacyEvents(path: string): void {
+    const db = new Database(path, { create: true });
+    db.exec(`CREATE TABLE events (
+      id TEXT PRIMARY KEY, site_id TEXT NOT NULL, visitor_id TEXT NOT NULL,
+      session_id TEXT NOT NULL, ts INTEGER NOT NULL, type TEXT NOT NULL,
+      name TEXT NOT NULL, path TEXT NOT NULL, query TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL DEFAULT '', referrer TEXT NOT NULL DEFAULT '',
+      referrer_host TEXT NOT NULL DEFAULT '', channel TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT '', utm_source TEXT NOT NULL DEFAULT '',
+      utm_medium TEXT NOT NULL DEFAULT '', utm_campaign TEXT NOT NULL DEFAULT '',
+      utm_term TEXT NOT NULL DEFAULT '', utm_content TEXT NOT NULL DEFAULT '',
+      device TEXT NOT NULL DEFAULT 'unknown', os TEXT NOT NULL DEFAULT 'unknown',
+      browser TEXT NOT NULL DEFAULT 'unknown', screen TEXT NOT NULL DEFAULT '',
+      lang TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT '',
+      tag TEXT NOT NULL DEFAULT '', identity TEXT NOT NULL DEFAULT '',
+      bot_kind TEXT NOT NULL DEFAULT '', bot_name TEXT NOT NULL DEFAULT '',
+      props TEXT NOT NULL DEFAULT '{}')`);
+    db.exec(`INSERT INTO events (id, site_id, visitor_id, session_id, ts, type, name, path, channel)
+             VALUES ('e1','s1','v1','sess1',1,'pageview','pageview','/','direct')`);
+    db.close();
+  }
+
+  test("init succeeds on a database that predates the agent columns", async () => {
+    // Production found this one: the new index on events(agent_trust) shipped in
+    // the same release as the column, `CREATE TABLE IF NOT EXISTS` did nothing
+    // on the live table, and every start crashed with "no such column". A fresh
+    // install was fine, which is exactly why the first test missed it.
+    const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
+    legacyEvents(path);
+
+    const store = new SqliteStore(path);
+    await store.init();
+
+    const cols = await store.select<{ name: string }>(`PRAGMA table_info(events)`);
+    expect(cols.map((c) => c.name)).toContain("agent_trust");
+    expect(cols.map((c) => c.name)).toContain("agent_signer");
+    await store.close();
+  });
+
+  test("the index that needed the new column exists afterwards", async () => {
+    const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
+    legacyEvents(path);
+    const store = new SqliteStore(path);
+    await store.init();
+    const idx = await store.select<{ name: string }>(
+      `SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'events'`
+    );
+    // Creating it before the migration is what crashed; skipping it entirely
+    // would be the other easy wrong fix.
+    expect(idx.map((i) => i.name)).toContain("idx_events_site_trust_ts");
+    await store.close();
+  });
+
+  test("the existing row survives and defaults to human", async () => {
+    const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
+    legacyEvents(path);
+    const store = new SqliteStore(path);
+    await store.init();
+    const rows = await store.select<{ id: string; agent_trust: string }>(
+      `SELECT id, agent_trust FROM events`
+    );
+    expect(rows[0]?.id).toBe("e1");
+    expect(rows[0]?.agent_trust).toBe("human");
+    await store.close();
+  });
+
+  test("a restart on the migrated database does not crash", async () => {
+    const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
+    legacyEvents(path);
+    const a = new SqliteStore(path);
+    await a.init();
+    await a.close();
+    const b = new SqliteStore(path);
+    await b.init();
+    await b.close();
+  });
+});

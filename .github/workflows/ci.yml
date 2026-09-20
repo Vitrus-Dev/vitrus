@@ -22,7 +22,7 @@ jobs:
       - name: Build tracker
         run: bun run build:tracker
 
-      # One command, the same one contributors run locally: typecheck, 198 tests,
+      # One command, the same one contributors run locally: typecheck, 315 tests,
       # two golden-set evals and four build gates.
       - name: Gates
         run: bun run gates

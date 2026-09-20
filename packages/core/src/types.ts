@@ -4,6 +4,8 @@
 // server decided.
 
 /** Traffic channel. `ai` = a human arriving from an AI assistant; an AI crawler never lands here (see bots.ts). */
+import type { AgentTrust } from "./agent.ts";
+
 export type Channel = "direct" | "search" | "ai" | "social" | "referral" | "email" | "paid" | "internal";
 
 /** The raw body the client sent. Every field is optional; validation lives in `validate.ts`. */
@@ -48,6 +50,15 @@ export interface RequestContext {
    * that beats silently showing the wrong country.
    */
   country?: string;
+  /**
+   * What the ORIGIN saw, when the caller is a server rather than a browser.
+   *
+   * A Web Bot Auth signature travels on the page request; JavaScript never
+   * sees one, so this arrives only from the server-side ingest path. Typed as
+   * `unknown` here to keep the event model free of the verifier's types — the
+   * ingest layer narrows it (see ingest.ts, AgentContext).
+   */
+  agent?: unknown;
 }
 
 export interface Utm {
@@ -91,10 +102,44 @@ export interface StoredEvent {
   /** Which kind of bot, if any (see bots.ts). "" for human traffic. */
   botKind: "" | BotKind;
   botName: string;
+  /**
+   * How well we know what this client is.
+   *
+   * `claimed` is what a user-agent can ever be worth — the client's own
+   * sentence about itself. `verified` means a Web Bot Auth signature was
+   * checked against the operator's published key (see agent.ts). The two are
+   * never merged, because the distinction is the product.
+   */
+  agentTrust: AgentTrust;
+  /** The key directory that vouched for a verified agent; "" otherwise. */
+  agentSigner: string;
+  /**
+   * Automation signals the request carried, as a comma-separated rule list.
+   *
+   * NOT a verdict. These are recorded so a suspicion can be explained later,
+   * and they do not remove anything from anyone's numbers by themselves —
+   * excluding them is a choice the operator makes and can see. See signals.ts.
+   */
+  botSignals: string;
+  /** Sum of the signal weights. 0 for everything that looks like a browser. */
+  botScore: number;
   props: Record<string, string | number | boolean | null>;
 }
 
-export type BotKind = "ai-crawler" | "search-crawler" | "seo" | "monitor" | "preview" | "generic";
+/**
+ * What kind of non-human client this is.
+ *
+ * `ai-crawler` and `ai-agent` are deliberately separate. A crawler reads in
+ * bulk with nobody waiting; an agent fetch happens because a person asked a
+ * question thirty seconds ago. Summed together they answer neither "is a model
+ * indexing me" nor "am I being consulted".
+ *
+ * A third case has no entry here at all: an agentic BROWSER (ChatGPT Atlas,
+ * Operator) runs JavaScript and sends an ordinary Chrome user-agent, so no
+ * table can name it. It is identified by its signature instead — see agent.ts
+ * and the AGENT_SESSION filter in metrics/queries.ts.
+ */
+export type BotKind = "ai-crawler" | "ai-agent" | "search-crawler" | "seo" | "monitor" | "preview" | "generic";
 
 export interface Site {
   id: string;

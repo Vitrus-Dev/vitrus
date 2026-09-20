@@ -134,7 +134,16 @@ describe("the self-hosted dashboard shows the whole engine", () => {
     // which makes the claim look false to the one person who checked.
     // The headings are built by the page's own script from this table, so the
     // table is what there is to assert on.
-    for (const section of ["Traffic", "AI", "Behaviour", "Performance", "Errors", "Audience"]) {
+    for (const section of [
+      "Traffic",
+      "AI",
+      "Agents",
+      "Traffic quality",
+      "Behaviour",
+      "Performance",
+      "Errors",
+      "Audience",
+    ]) {
       expect(html, `section missing: ${section}`).toContain(`["${section}",`);
     }
   });
@@ -148,6 +157,31 @@ describe("the self-hosted dashboard shows the whole engine", () => {
   test("a metric no section claims still renders rather than vanishing", () => {
     expect(html).toContain('"More"');
     expect(html).toContain("listed[e.metric]");
+  });
+
+  test("a SCALAR no card claims also renders — the other half of that promise", () => {
+    // The rows catch-all existed; the cards had none, so a scalar the engine
+    // computed but CARDS did not name was simply absent from the self-hosted
+    // page while an equivalent rows metric fell through to "More". The claim
+    // "no metric is held back" only held for half the bundle.
+    expect(html).toContain("CARDS.indexOf(e.metric) === -1");
+    expect(html).toContain("CARDS.concat(extra)");
+  });
+
+  test("the agent and traffic-quality metrics reach the page", () => {
+    // These are the v0.3.0 additions; they are in the Apache-2.0 core, so they
+    // have to be visible to somebody running only this repository.
+    for (const m of [
+      "agent.sessions",
+      "agent.operators",
+      "agent.pages",
+      "agents.by_signer",
+      "agents.unverified_bots",
+      "bots.suspected",
+      "bots.signal_rules",
+    ]) {
+      expect(html, `metric missing: ${m}`).toContain(m);
+    }
   });
 
   test("every table keeps its evidence control", () => {

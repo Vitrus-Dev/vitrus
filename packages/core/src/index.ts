@@ -2,6 +2,22 @@
 export * from "./types.ts";
 export { detectBot, BOT_RULES, BOT_TABLE_VERSION, type BotVerdict } from "./bots.ts";
 export {
+  AgentKeys,
+  agentTrust,
+  verifyAgent,
+  jwkThumbprint,
+  signatureBase,
+  parseSignatureInput,
+  parseSignature,
+  parseSignatureAgent,
+  DIRECTORY_PATH,
+  SKEW_MS,
+  type AgentTrust,
+  type AgentReason,
+  type AgentVerdict,
+  type Jwk,
+} from "./agent.ts";
+export {
   classifyReferrer,
   parseUtm,
   hostOf,
@@ -15,6 +31,7 @@ export {
 } from "./referrers.ts";
 export { parseUa, type UaVerdict } from "./ua.ts";
 export { countryFromHeaders, COUNTRY_HEADERS } from "./geo.ts";
+export { COUNTRIES, countryName, countryPoint, type Country } from "./countries.ts";
 export { normalizeIp, ipv6Prefix64 } from "./ip.ts";
 export {
   policyFor,
@@ -43,7 +60,41 @@ export {
   type TimeWindow,
   type SeriesPoint,
 } from "./metrics/bundle.ts";
-export { METRICS, metricsFor, metricById, type MetricDef } from "./metrics/queries.ts";
+export {
+  METRICS,
+  metricsFor,
+  metricById,
+  HUMAN,
+  HUMAN_STRICT,
+  AGENT_SESSION,
+  SUSPECT_SCORE,
+  type MetricDef,
+} from "./metrics/queries.ts";
+export {
+  headerSignals,
+  describeSignals,
+  serializeSignals,
+  parseSignals,
+  score,
+  suspected,
+  SUSPECT_AT,
+  SIGNAL_TABLE_VERSION,
+  type Signal,
+} from "./signals.ts";
+export {
+  FILTER_FIELDS,
+  FILTER_LABELS,
+  FilterError,
+  applyFilters,
+  describeFilters,
+  filterValues,
+  isFilterField,
+  parseFilters,
+  serializeFilters,
+  windowCount,
+  type Filter,
+  type FilterField,
+} from "./metrics/filters.ts";
 export {
   computeFunnel,
   buildFunnelSql,

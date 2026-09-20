@@ -66,6 +66,9 @@ The drop coincides with the last deploy. [e1, e7]
 | ------------------------------------- | ------------------------------- | ------------------- |
 | The query behind every number         | **Clickable, always**           | Not available       |
 | AI referrals vs AI crawlers           | **Separate, never summed**      | Mixed or discarded  |
+| Who an agent *proved* it was          | **Signature-checked, signer named** | User-agent only |
+| Agent browser sessions                | **Their own class**             | Dropped, blocked or counted as a person |
+| Bot detection layers                  | **Two, both open source**       | One, or the second is cloud-only |
 | AI summaries                          | **Unprovable sentences dropped** | Shipped as written |
 | Cookies / consent banner              | **None needed**                 | Usually required    |
 | Tracker size                          | **2.4 KB gzipped**              | 12–28 KB            |
@@ -92,6 +95,9 @@ kind of unverifiable claim this project was built to stop making.
 | Crawler reads separated from the humans they send | ✗ | ✗ | ✗ | **✓** | ✗ | **✓** |
 | **The query behind every number, in the UI** | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
 | **AI sentences dropped when the number is unprovable** | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Verified agent identity (Web Bot Auth) | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Agent browser sessions kept as their own class | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Bot detection beyond the user-agent, in the open-source build | ✗ | ✗ | ✗ | ✗ | ✗ | **✓** |
 | Session replay | ✗ | ✗ | **✓** | **✓** | ✗ | ✗ *(deliberate)* |
 | Ad-platform attribution (ROAS) | **✓** | ✗ | ✗ | ✗ | ✗ | ✗ *(deliberate)* |
 | City-level geography | **✓** | **✓** | **✓** | **✓** | **✓** | country only |
@@ -114,6 +120,12 @@ granularity GEO work actually needs — and, like every other number here, both 
 that produced them. We also do not draw a line between the two: "GPTBot read /pricing 84 times and 3
 sessions arrived from ChatGPT on /pricing" is a coincidence in time, and the digest is forbidden from
 calling it a cause.
+
+The three agent rows were added 19 September 2026. On the last of them, to be specific rather than
+smug: Plausible's *cloud* runs user-agent filtering plus datacentre IP ranges plus behavioural
+analysis, and it is very likely better at this than we are. The claim is only about what ships in the
+open-source build — its Community Edition has the user-agent filter alone, and our second layer is in
+the Apache-2.0 core.
 
 Longer write-ups, one per tool: [vitrus.dev/compare](https://vitrus.dev/compare).
 
@@ -152,12 +164,35 @@ message, page and browser.
 **AI** — AI assistants as their own traffic channel, which pages AI crawlers are reading, and the gap
 between the two.
 
+**Agents** — signed requests verified against the Ed25519 key their operator publishes (Web Bot Auth,
+over RFC 9421 HTTP Message Signatures), so the signer can be *named*; agent browser sessions counted
+as their own class with their own funnel, rather than dropped, blocked or mistaken for people; and a
+second detection layer that scores whether a request agrees with the browser its user-agent claims to
+be. That last one is recorded and shown, never self-applying — see below.
+
+**Filters and geography** — click any row to narrow every number on the page, compiled into the SQL
+on the server rather than applied to rows in the browser, so the query you can read is the query that
+produced the number. Visitors by country on a globe drawn from the built-in country table, with no
+tile service and no third-party request.
+
 **Control** — exclude your own visits, skip or mask private URLs in the browser, standard and strict
 privacy modes, Slack/email/webhook digests, a REST API and a read-only MCP server.
 
 All of it renders in the self-hosted dashboard — not only through the API. The open-core claim is
 that no metric is held back from this repository, and a dashboard that showed six cards while the
 documentation listed Web Vitals would make that claim look false to the one person who checked.
+
+**A suspicion is not a verdict.** The second detection layer writes the rules that fired onto the
+event (`bot_signals`, `bot_score`) and changes no number by itself. Traffic that looks automated is
+still counted everywhere until you flip a switch; the switch is not remembered between visits, a
+banner stays on screen while it is on, and the evidence panel shows the predicate doing the
+excluding. A silent filter is indistinguishable, from your side, from a bug that loses traffic — so
+"rather undercount than guess" cuts both ways, and we will not guess that someone is a robot either.
+
+It is also not a fingerprint: no canvas, no font enumeration, no WebGL, no plugin list. Every rule
+reads a header the client sent anyway, and a test fails the build if a fingerprinting surface ever
+appears in that module. Known blind spots are written down rather than glossed: a headless browser
+with stealth patches scores zero, and so does a residential-proxy botnet running real Chrome.
 
 Deliberately absent: session replay and ad-platform attribution. [Here is why](https://vitrus.dev/docs/faq).
 
@@ -207,7 +242,7 @@ bun run build:tracker
 bun run gates
 ```
 
-`gates` runs the type checker, 198 tests, two golden-set evals and four build gates:
+`gates` runs the type checker, 315 tests, two golden-set evals and four build gates:
 
 | Gate               | What it prevents                                                              |
 | ------------------ | ----------------------------------------------------------------------------- |

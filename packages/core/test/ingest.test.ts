@@ -121,3 +121,31 @@ describe("Ingestor", () => {
     if (a.ok && b.ok) expect(a.event.visitorId).not.toBe(b.event.visitorId);
   });
 });
+
+describe("splitUrl and protocol-relative references", () => {
+  test("a protocol-relative url is a URL, not a path", () => {
+    // Stored raw it became the literal path "//host/page", which then showed up
+    // in the top-pages table as a page that does not exist. Production had one.
+    expect(splitUrl("//example.com/pricing", "example.com")).toEqual({
+      path: "/pricing",
+      query: "",
+      host: "example.com",
+    });
+  });
+
+  test("the host in a protocol-relative url is honoured, not the fallback", () => {
+    expect(splitUrl("//other.example/p", "example.com").host).toBe("other.example");
+  });
+
+  test("ordinary forms are unchanged", () => {
+    expect(splitUrl("https://example.com/a", "example.com").path).toBe("/a");
+    expect(splitUrl("/a", "example.com").path).toBe("/a");
+    expect(splitUrl("a", "example.com").path).toBe("/a");
+    expect(splitUrl("https://example.com/a/", "example.com").path).toBe("/a");
+    expect(splitUrl("https://example.com/", "example.com").path).toBe("/");
+  });
+
+  test("nonsense still degrades to the root rather than throwing", () => {
+    expect(splitUrl("://///", "example.com").path).toBe("/");
+  });
+});

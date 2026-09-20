@@ -11,7 +11,8 @@
 // manufactured explanation but the query that actually ran.
 
 import type { Store } from "../store/store.ts";
-import { metricsFor, type MetricDef, type MetricUnit, type ParamContext } from "./queries.ts";
+import { applyFilters, filterValues, windowCount, type Filter } from "./filters.ts";
+import { HUMAN, HUMAN_STRICT, metricsFor, type MetricDef, type MetricUnit, type ParamContext } from "./queries.ts";
 
 export interface TimeWindow {
   from: number;
@@ -87,7 +88,7 @@ export function bucketFor(w: TimeWindow): number {
 /** The "live" window: the last 5 minutes (industry standard). */
 export const LIVE_WINDOW_MS = 5 * 60_000;
 
-function contextFor(siteId: string, w: TimeWindow, now: number): ParamContext {
+function contextFor(siteId: string, w: TimeWindow, now: number, filters: readonly Filter[]): ParamContext {
   return {
     siteId,
     from: w.from,
@@ -95,26 +96,51 @@ function contextFor(siteId: string, w: TimeWindow, now: number): ParamContext {
     bucketMs: bucketFor(w),
     liveFrom: now - LIVE_WINDOW_MS,
     now,
+    filterValues: filterValues(filters),
   };
 }
 
-function paramsFor(def: MetricDef, siteId: string, w: TimeWindow, now: number): unknown[] {
-  const slots = (def.sql.match(/\?/g) ?? []).length;
+/**
+ * Parameters for a metric, in the order its placeholders appear.
+ *
+ * With filters active the statement has extra placeholders — one block per
+ * window predicate, appended immediately after it (see filters.ts). The count
+ * is checked against the FILTERED sql rather than the original, so a mistake
+ * here fails loudly at build time instead of binding the wrong value to the
+ * wrong column and returning a plausible number.
+ */
+function paramsFor(
+  def: MetricDef,
+  siteId: string,
+  w: TimeWindow,
+  now: number,
+  filters: readonly Filter[],
+  filteredSql: string
+): unknown[] {
+  const slots = (filteredSql.match(/\?/g) ?? []).length;
+  const values = filterValues(filters);
 
-  // Custom builder: time-series and live metrics need inputs other than the window triple.
+  // Custom builder: time-series and live metrics need inputs other than the
+  // window triple. They append the filter values themselves, because only they
+  // know where their own placeholders sit.
   if (def.params) {
-    const out = def.params(contextFor(siteId, w, now));
+    const out = def.params(contextFor(siteId, w, now, filters));
     if (out.length !== slots) {
       throw new Error(`metric ${def.id}: ${slots} placeholders but ${out.length} parameters produced`);
     }
     return out;
   }
 
-  if (slots % 3 !== 0) {
-    throw new Error(`metric ${def.id}: parameter count is not a multiple of 3 (${slots}) — the WINDOW template is broken`);
+  const windows = windowCount(def.sql);
+  const expected = windows * (3 + values.length);
+  if (slots !== expected) {
+    throw new Error(
+      `metric ${def.id}: ${slots} placeholders but ${windows} window predicate(s) with ` +
+        `${values.length} filter(s) account for ${expected} — the WINDOW template is broken`
+    );
   }
   const out: unknown[] = [];
-  for (let i = 0; i < slots / 3; i++) out.push(siteId, w.from, w.to);
+  for (let i = 0; i < windows; i++) out.push(siteId, w.from, w.to, ...values);
   return out;
 }
 
@@ -134,9 +160,19 @@ export async function buildBundle(
     window: TimeWindow;
     compare?: TimeWindow | null;
     now?: number;
+    /** Compiled into every metric's WHERE clause, never applied in the browser. */
+    filters?: readonly Filter[];
+    /**
+     * Also exclude requests carrying automation signals.
+     *
+     * Off by default and never applied silently: the swapped predicate is
+     * visible in the evidence panel, so the number and the query still agree.
+     */
+    strictBots?: boolean;
   }
 ): Promise<MetricBundle> {
   const vertical = opts.vertical ?? "generic";
+  const filters = opts.filters ?? [];
   const defs = metricsFor(vertical);
   const compare = opts.compare ?? null;
   const evidence: Evidence[] = [];
@@ -145,15 +181,22 @@ export async function buildBundle(
   let n = 0;
   for (const def of defs) {
     n++;
-    const params = paramsFor(def, opts.siteId, opts.window, now);
-    const rows = await store.select<Record<string, unknown>>(def.sql, params);
+    // The FILTERED statement is what runs and what the evidence panel shows.
+    // Showing the unfiltered one would mean the query on screen does not
+    // produce the number next to it.
+    // Strict mode swaps the human predicate itself, so the query the user can
+    // click on is the query that produced the number they are looking at.
+    const base = opts.strictBots ? def.sql.split(HUMAN).join(HUMAN_STRICT) : def.sql;
+    const sql = applyFilters(base, filters);
+    const params = paramsFor(def, opts.siteId, opts.window, now, filters, sql);
+    const rows = await store.select<Record<string, unknown>>(sql, params);
 
     const e: Evidence = {
       id: `e${n}`,
       metric: def.id,
       label: def.label,
       unit: def.unit,
-      sql: def.sql,
+      sql,
       params,
       window: opts.window,
       value: def.kind === "scalar" ? numberOf(rows[0]) : null,
@@ -165,8 +208,8 @@ export async function buildBundle(
     }
 
     if (compare && def.kind === "scalar" && !def.noCompare) {
-      const prevParams = paramsFor(def, opts.siteId, compare, now);
-      const prevRows = await store.select<Record<string, unknown>>(def.sql, prevParams);
+      const prevParams = paramsFor(def, opts.siteId, compare, now, filters, sql);
+      const prevRows = await store.select<Record<string, unknown>>(sql, prevParams);
       const prev = numberOf(prevRows[0]);
       e.previousParams = prevParams;
       e.previous = prev;

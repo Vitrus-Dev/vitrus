@@ -14,6 +14,8 @@
 // who signs up and then browses the pricing page counts as "converted" and the
 // funnel inflates.
 
+import { AGENT_SESSION, HUMAN } from "./queries.ts";
+
 export type FunnelStepType = "page" | "event";
 
 export interface FunnelStep {
@@ -80,9 +82,16 @@ export function validateSteps(steps: FunnelStep[]): FunnelStep[] {
  * cannot push the funnel forward (visit /pricing twice and the second visit does
  * not count).
  */
-export function buildFunnelSql(steps: FunnelStep[]): { sql: string; shape: FunnelStepType[] } {
+export function buildFunnelSql(steps: FunnelStep[], audience: Audience = "human"): { sql: string; shape: FunnelStepType[] } {
   const ctes: string[] = [];
   const selects: string[] = [];
+
+  // The audience predicate comes from the SAME constants every other metric
+  // uses. This file used to inline `bot_kind = ''`, which was a copy of the
+  // human filter — and once agent sessions existed that copy was wrong: an
+  // agent completing a checkout was counted as a human conversion.
+  const who = audience === "agent" ? AGENT_SESSION : HUMAN;
+  const whoAliased = who.replace(/\b(bot_kind|agent_trust)\b/g, "e.$1");
 
   steps.forEach((step, i) => {
     // The column and the row type come from a FIXED union (NOT user input) —
@@ -94,7 +103,7 @@ export function buildFunnelSql(steps: FunnelStep[]): { sql: string; shape: Funne
     if (i === 0) {
       ctes.push(
         `s0 AS (SELECT session_id, MIN(ts) AS t FROM events
-                 WHERE site_id = ? AND ts >= ? AND ts < ? AND bot_kind = ''
+                 WHERE site_id = ? AND ts >= ? AND ts < ? AND ${who}
                    AND type = '${rowType}' AND ${col} = ?
                  GROUP BY session_id)`
       );
@@ -102,7 +111,7 @@ export function buildFunnelSql(steps: FunnelStep[]): { sql: string; shape: Funne
       ctes.push(
         `s${i} AS (SELECT e.session_id, MIN(e.ts) AS t FROM events e
                     JOIN s${i - 1} p ON p.session_id = e.session_id AND e.ts >= p.t
-                   WHERE e.site_id = ? AND e.ts >= ? AND e.ts < ? AND e.bot_kind = ''
+                   WHERE e.site_id = ? AND e.ts >= ? AND e.ts < ? AND ${whoAliased}
                      AND e.type = '${rowType}' AND e.${col} = ?
                    GROUP BY e.session_id)`
       );
@@ -114,11 +123,25 @@ export function buildFunnelSql(steps: FunnelStep[]): { sql: string; shape: Funne
   return { sql, shape: steps.map((s) => s.type) };
 }
 
+/**
+ * Whose funnel this is.
+ *
+ * "Can an agent complete my checkout?" is a question every e-commerce site will
+ * have to answer, and it cannot be asked at all if agent traffic is discarded
+ * (Umami, Plausible), blocked (Rybbit) or merged into the human funnel (GA4).
+ * The two are computed the same way and shown side by side; they are never
+ * added together, because an agent that bounces is not a UX problem and an
+ * agent that converts is not a person.
+ */
+export type Audience = "human" | "agent";
+
 export interface FunnelQuery {
   siteId: string;
   from: number;
   to: number;
   steps: FunnelStep[];
+  /** Defaults to "human" — the existing behaviour for every existing caller. */
+  audience?: Audience;
 }
 
 export async function computeFunnel(
@@ -126,7 +149,7 @@ export async function computeFunnel(
   q: FunnelQuery
 ): Promise<FunnelResult> {
   const steps = validateSteps(q.steps);
-  const { sql } = buildFunnelSql(steps);
+  const { sql } = buildFunnelSql(steps, q.audience ?? "human");
 
   const params: unknown[] = [];
   for (const step of steps) params.push(q.siteId, q.from, q.to, step.value);

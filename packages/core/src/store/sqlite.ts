@@ -6,7 +6,7 @@ import { Database } from "bun:sqlite";
 import type { Site, StoredEvent } from "../types.ts";
 import { SCHEMA_VERSION, type Store } from "./store.ts";
 
-const DDL = `
+const TABLES = `
 CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -51,15 +51,40 @@ CREATE TABLE IF NOT EXISTS events (
   identity      TEXT NOT NULL DEFAULT '',
   bot_kind      TEXT NOT NULL DEFAULT '',
   bot_name      TEXT NOT NULL DEFAULT '',
+  -- How well we know what the client is: 'human' | 'claimed' | 'verified'.
+  -- 'claimed' is all a user-agent can ever be worth; 'verified' means a Web Bot
+  -- Auth signature was checked against the operator's published key.
+  agent_trust   TEXT NOT NULL DEFAULT 'human',
+  agent_signer  TEXT NOT NULL DEFAULT '',
+  -- Automation signals, as a comma-separated rule list, and their total.
+  -- Recorded, never self-applying: nothing is filtered on these unless the
+  -- operator asks, and then the evidence shows the filter.
+  bot_signals   TEXT NOT NULL DEFAULT '',
+  bot_score     INTEGER NOT NULL DEFAULT 0,
   props         TEXT NOT NULL DEFAULT '{}'
 );
 
+`;
+
+/**
+ * Indexes are created AFTER `addMissingColumns`, never with the tables.
+ *
+ * An index over a column that a migration is about to add cannot exist before
+ * the migration runs — and `CREATE TABLE IF NOT EXISTS` gives no warning,
+ * because on an existing database it does nothing at all. Production found
+ * this one: a new index on `events(agent_trust)` shipped in the same release
+ * as the column, and every start crashed with "no such column" until the
+ * ordering was fixed. A fresh install was fine, which is exactly why the tests
+ * did not catch it.
+ */
+const INDEXES = `
 CREATE INDEX IF NOT EXISTS idx_events_site_ts       ON events (site_id, ts);
 CREATE INDEX IF NOT EXISTS idx_events_site_sess     ON events (site_id, session_id);
 CREATE INDEX IF NOT EXISTS idx_events_site_vis_ts   ON events (site_id, visitor_id, ts);
 CREATE INDEX IF NOT EXISTS idx_events_site_chan_ts  ON events (site_id, channel, ts);
 CREATE INDEX IF NOT EXISTS idx_events_site_name_ts  ON events (site_id, name, ts);
 CREATE INDEX IF NOT EXISTS idx_events_site_bot_ts   ON events (site_id, bot_kind, ts);
+CREATE INDEX IF NOT EXISTS idx_events_site_trust_ts ON events (site_id, agent_trust, ts);
 CREATE INDEX IF NOT EXISTS idx_events_site_ident_ts ON events (site_id, identity, ts);
 `;
 
@@ -83,8 +108,9 @@ export class SqliteStore implements Store {
     this.db.exec("PRAGMA journal_mode = WAL;");
     this.db.exec("PRAGMA synchronous = NORMAL;");
     this.db.exec("PRAGMA foreign_keys = ON;");
-    this.db.exec(DDL);
+    this.db.exec(TABLES);
     this.addMissingColumns();
+    this.db.exec(INDEXES);
     const current = await this.getMeta("schema_version");
     if (current === null) await this.setMeta("schema_version", SCHEMA_VERSION);
   }
@@ -109,6 +135,10 @@ export class SqliteStore implements Store {
   private addMissingColumns(): void {
     const ADDITIONS: ReadonlyArray<{ table: string; column: string; ddl: string }> = [
       { table: "sites", column: "privacy_mode", ddl: "TEXT NOT NULL DEFAULT 'standard'" },
+      { table: "events", column: "agent_trust", ddl: "TEXT NOT NULL DEFAULT 'human'" },
+      { table: "events", column: "agent_signer", ddl: "TEXT NOT NULL DEFAULT ''" },
+      { table: "events", column: "bot_signals", ddl: "TEXT NOT NULL DEFAULT ''" },
+      { table: "events", column: "bot_score", ddl: "INTEGER NOT NULL DEFAULT 0" },
     ];
     for (const a of ADDITIONS) {
       const cols = this.db.query<{ name: string }, []>(`PRAGMA table_info(${a.table})`).all();
@@ -193,8 +223,9 @@ export class SqliteStore implements Store {
           (id, site_id, visitor_id, session_id, ts, type, name, path, query, title,
            referrer, referrer_host, channel, source,
            utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-           device, os, browser, screen, lang, country, tag, identity, bot_kind, bot_name, props)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+           device, os, browser, screen, lang, country, tag, identity, bot_kind, bot_name,
+           agent_trust, agent_signer, bot_signals, bot_score, props)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       );
     }
     return this.insertStmt;
@@ -243,6 +274,10 @@ function eventParams(e: StoredEvent): unknown[] {
     e.identity,
     e.botKind,
     e.botName,
+    e.agentTrust ?? "human",
+    e.agentSigner ?? "",
+    e.botSignals ?? "",
+    e.botScore ?? 0,
     JSON.stringify(e.props ?? {}),
   ];
 }

@@ -11,7 +11,60 @@
 //  2. Bot metrics are separate metrics (the AI-crawler panel) and are never
 //     summed together with human metrics.
 
-export const HUMAN = `bot_kind = ''`;
+/**
+ * What counts as a person.
+ *
+ * Two exclusions, and the second one is new. A known bot is excluded by its
+ * user-agent as it always was. An **agent session** is excluded by its
+ * signature: an agentic browser (ChatGPT Atlas, OpenAI Operator) runs
+ * JavaScript, reaches this beacon and sends an ordinary Chrome user-agent, so
+ * no bot table can catch it — but it signs its requests, and a request that
+ * cryptographically proves it is ChatGPT is not a visitor.
+ *
+ * Everyone else handles this differently and, we think, wrongly: Umami and
+ * Plausible discard such traffic, Rybbit blocks it, GA4 counts it as a person.
+ * Discarding is wrong because an agent that completes a checkout is revenue;
+ * counting it as human is wrong because an agent that bounces is not a UX
+ * problem. So it is neither dropped nor merged — see AGENT_SESSION.
+ *
+ * Written as `= 'human'` rather than `<> 'verified'` on purpose: a request that
+ * carried a signature we could not verify is not a person either, and the
+ * looser form counted the first request from every signing agent — once per key
+ * cache lifetime — as a visitor.
+ *
+ * Changing this one constant moves every human metric at once, which is the
+ * reason it is a constant and never copy-pasted.
+ */
+export const HUMAN = `bot_kind = '' AND agent_trust = 'human'`;
+
+/**
+ * A browser session driven by an agent on someone's behalf.
+ *
+ * Browser-shaped (no bot user-agent) AND cryptographically proven to be an
+ * agent. Deliberately narrow: an agent browsing without a signature is
+ * indistinguishable from a person, and we would rather undercount than guess.
+ * The documentation says so rather than implying this number is a total.
+ */
+export const AGENT_SESSION = `bot_kind = '' AND agent_trust = 'verified'`;
+
+/**
+ * The bar at which a request carries enough automation signals to be worth
+ * mentioning. Mirrors SUSPECT_AT in signals.ts — the number lives in both
+ * places because one is TypeScript and one is SQL, and a test pins them equal.
+ */
+export const SUSPECT_SCORE = 5;
+
+/**
+ * `HUMAN`, minus the requests that look automated.
+ *
+ * NOT the default. The reason people ask for this is real — self-hosters report
+ * 200 real visitors showing up as 5,000 — but applying it silently would make
+ * the product unable to explain its own numbers, and it would sometimes delete
+ * a real visitor who happens to use an unusual browser. So it is a choice the
+ * operator makes per request, the dashboard says when it is on, and the
+ * evidence panel shows the predicate that did it.
+ */
+export const HUMAN_STRICT = `${HUMAN} AND bot_score < ${SUSPECT_SCORE}`;
 
 export type MetricKind = "scalar" | "rows" | "series";
 export type MetricUnit = "count" | "percent" | "seconds" | "ratio";
@@ -25,6 +78,14 @@ export interface ParamContext {
   /** Start of the "live" window (now - 5 min). */
   liveFrom: number;
   now: number;
+  /**
+   * Values for the active dashboard filters, in declaration order.
+   *
+   * A custom parameter builder must append these after ITS window predicate,
+   * because `applyFilters` puts the placeholders immediately after the same
+   * predicate and only the builder knows where that is in its own list.
+   */
+  filterValues: unknown[];
 }
 
 export interface MetricDef {
@@ -69,7 +130,7 @@ export const METRICS: readonly MetricDef[] = [
             FROM events
            WHERE site_id = ? AND ts >= ? AND ts < ? AND ${HUMAN}
            GROUP BY bucket ORDER BY bucket ASC`,
-    params: (c) => [c.from, c.bucketMs, c.siteId, c.from, c.to],
+    params: (c) => [c.from, c.bucketMs, c.siteId, c.from, c.to, ...c.filterValues],
   },
   {
     id: "live.visitors",
@@ -79,7 +140,7 @@ export const METRICS: readonly MetricDef[] = [
     noCompare: true,
     sql: `SELECT COUNT(DISTINCT visitor_id) AS value
             FROM events WHERE site_id = ? AND ts >= ? AND ${HUMAN}`,
-    params: (c) => [c.siteId, c.liveFrom],
+    params: (c) => [c.siteId, c.liveFrom, ...c.filterValues],
   },
   {
     id: "visitors.unique",
@@ -308,6 +369,131 @@ export const METRICS: readonly MetricDef[] = [
            GROUP BY utm_source, utm_medium, utm_campaign
            ORDER BY sessions DESC, campaign ASC LIMIT 15`,
   },
+  // ——— Automation signals (layer two) ———
+  // Recorded, never self-applying. The dashboard shows what WOULD be excluded
+  // and which rule fired, and excluding it is the operator's decision.
+  {
+    id: "bots.suspected",
+    label: "Visitors with automation signals",
+    kind: "scalar",
+    unit: "count",
+    // Predicate written out rather than composed from HUMAN on purpose: strict
+    // mode rewrites every occurrence of HUMAN, which here would turn into
+    // `bot_score < 5 AND bot_score >= 5` and report zero suspects forever.
+    sql: `SELECT COUNT(DISTINCT visitor_id) AS value FROM events
+           WHERE ${WINDOW} AND bot_score >= ${SUSPECT_SCORE}
+             AND agent_trust = 'human' AND bot_kind = ''`,
+  },
+  {
+    id: "bots.signal_rules",
+    label: "Which signal fired",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT bot_signals AS signals, bot_score AS score,
+                 COUNT(*) AS events, COUNT(DISTINCT visitor_id) AS visitors
+            FROM events
+           WHERE ${WINDOW} AND bot_kind = '' AND bot_signals <> ''
+           GROUP BY bot_signals, bot_score
+           ORDER BY events DESC LIMIT 15`,
+  },
+
+  // ——— Agent sessions ———
+  // The traffic class every other tool gets wrong: an agentic browser driving a
+  // real session. Not dropped (an agent that checks out is revenue), not merged
+  // with people (an agent that bounces is not a UX problem).
+  {
+    id: "agent.sessions",
+    label: "Agent sessions",
+    kind: "scalar",
+    unit: "count",
+    sql: `SELECT COUNT(DISTINCT session_id) AS value FROM events
+           WHERE ${WINDOW} AND ${AGENT_SESSION}`,
+  },
+  {
+    id: "agent.pageviews",
+    label: "Pages read by agents",
+    kind: "scalar",
+    unit: "count",
+    sql: `SELECT COUNT(*) AS value FROM events
+           WHERE ${WINDOW} AND ${AGENT_SESSION} AND type = 'pageview'`,
+  },
+  {
+    id: "agent.operators",
+    label: "Who the agents belong to",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT agent_signer AS operator,
+                 COUNT(DISTINCT session_id) AS sessions,
+                 COUNT(*) AS events
+            FROM events
+           WHERE ${WINDOW} AND ${AGENT_SESSION}
+           GROUP BY agent_signer ORDER BY sessions DESC LIMIT 10`,
+  },
+  {
+    id: "agent.pages",
+    label: "Pages agents visit",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT path, COUNT(*) AS views, COUNT(DISTINCT session_id) AS sessions
+            FROM events
+           WHERE ${WINDOW} AND ${AGENT_SESSION} AND type = 'pageview'
+           GROUP BY path ORDER BY views DESC LIMIT 10`,
+  },
+  {
+    id: "agent.events",
+    label: "What agents did",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT name, COUNT(*) AS count
+            FROM events
+           WHERE ${WINDOW} AND ${AGENT_SESSION} AND type = 'event'
+           GROUP BY name ORDER BY count DESC LIMIT 10`,
+  },
+
+  // ——— Verified agent identity ———
+  // Every other tool in this category reports "GPTBot read 4,120 pages" when
+  // what it knows is "4,120 requests said they were GPTBot". These two metrics
+  // keep those apart, because the difference is the product.
+  {
+    id: "agents.verified",
+    label: "Verified agent requests",
+    kind: "scalar",
+    unit: "count",
+    sql: `SELECT COUNT(*) AS value FROM events
+           WHERE ${WINDOW} AND agent_trust = 'verified'`,
+  },
+  {
+    id: "agents.claimed",
+    label: "Self-declared bot requests",
+    kind: "scalar",
+    unit: "count",
+    sql: `SELECT COUNT(*) AS value FROM events
+           WHERE ${WINDOW} AND agent_trust = 'claimed'`,
+  },
+  {
+    id: "agents.by_signer",
+    label: "Agents that proved who they are",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT agent_signer AS signer, bot_name AS agent, COUNT(*) AS hits,
+                 COUNT(DISTINCT path) AS pages
+            FROM events
+           WHERE ${WINDOW} AND agent_trust = 'verified' AND agent_signer <> ''
+           GROUP BY agent_signer, bot_name
+           ORDER BY hits DESC LIMIT 15`,
+  },
+  {
+    id: "agents.unverified_bots",
+    label: "Bots we could not verify",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT bot_name AS agent, bot_kind AS kind, COUNT(*) AS hits
+            FROM events
+           WHERE ${WINDOW} AND agent_trust = 'claimed'
+           GROUP BY bot_name, bot_kind
+           ORDER BY hits DESC LIMIT 15`,
+  },
+
   // ——— Core Web Vitals ———
   // p75, NOT the average: in web performance a handful of slow visits drags the
   // mean around and manufactures a "nothing is wrong" illusion. Google's own
