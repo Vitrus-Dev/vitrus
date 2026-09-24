@@ -42,12 +42,18 @@ function json(data: unknown, status = 200, extra: Record<string, string> = {}): 
 }
 
 function clientIp(req: Request): string {
+  // Cloudflare's header first. Behind Cloudflare -> Caddy, x-forwarded-for is
+  // rewritten by Caddy to the address that connected to IT — a Cloudflare edge
+  // that changes from request to request — so one page visit was hashed into
+  // up to three visitors (pageview, click, web vitals), each its own session.
+  const cf = req.headers.get("cf-connecting-ip")?.trim();
+  if (cf) return cf;
   const xff = req.headers.get("x-forwarded-for");
   if (xff) {
     const first = xff.split(",")[0]?.trim();
     if (first) return first;
   }
-  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "0.0.0.0";
+  return req.headers.get("x-real-ip") || "0.0.0.0";
 }
 
 export interface PublicReplayOptions {

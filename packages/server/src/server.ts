@@ -44,14 +44,20 @@ function json(data: unknown, status = 200, extra: Record<string, string> = {}): 
   return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extra } });
 }
 
-/** The real client IP. Behind a proxy, the FIRST value of x-forwarded-for is used. */
+/** The real client IP: Cloudflare's cf-connecting-ip, else the FIRST value of x-forwarded-for. */
 export function clientIp(req: Request, fallback = "0.0.0.0"): string {
+  // Cloudflare's header first. Behind Cloudflare -> Caddy, x-forwarded-for is
+  // rewritten by Caddy to the address that connected to IT — a Cloudflare edge
+  // that changes from request to request — so one page visit was hashed into
+  // up to three visitors (pageview, click, web vitals), each its own session.
+  const cf = req.headers.get("cf-connecting-ip")?.trim();
+  if (cf) return cf;
   const xff = req.headers.get("x-forwarded-for");
   if (xff) {
     const first = xff.split(",")[0]?.trim();
     if (first) return first;
   }
-  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || fallback;
+  return req.headers.get("x-real-ip") || fallback;
 }
 
 export function createHandler(opts: ServerOptions): (req: Request) => Promise<Response> {

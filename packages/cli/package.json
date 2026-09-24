@@ -1,6 +1,6 @@
 {
   "name": "@vitrus/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Vitrus CLI — init, site, start, digest, demo.",

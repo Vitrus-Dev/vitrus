@@ -23,6 +23,13 @@ function collect(body: unknown, headers: Record<string, string> = {}) {
 }
 
 describe("clientIp", () => {
+  test("prefers cf-connecting-ip: behind Cloudflare -> Caddy, x-forwarded-for is the edge", () => {
+    const req = new Request("http://x/", {
+      headers: { "cf-connecting-ip": "203.0.113.7", "x-forwarded-for": "172.70.1.1" },
+    });
+    expect(clientIp(req)).toBe("203.0.113.7");
+  });
+
   test("takes the FIRST value of x-forwarded-for (the proxy chain)", () => {
     const req = new Request("http://x/", { headers: { "x-forwarded-for": "203.0.113.1, 10.0.0.1" } });
     expect(clientIp(req)).toBe("203.0.113.1");
