@@ -214,6 +214,23 @@ async function seedDemo(store: SqliteStore, site: Site, days: number): Promise<n
     "",
   ];
   const paths = ["/", "/pricing", "/blog/why-vitrus", "/signup"];
+  // Sample locations, in the shape a proxy with city headers would send
+  // (see core/geo.ts), so the globe has something to draw. Real data comes
+  // only from proxy headers; nothing here is looked up from an IP.
+  const places: [string, string, string, string, number, number][] = [
+    ["US", "US-CA", "California", "San Francisco", 37.8, -122.4],
+    ["US", "US-NY", "New York", "New York", 40.7, -74.0],
+    ["US", "US-TX", "Texas", "Austin", 30.3, -97.7],
+    ["DE", "DE-BE", "Berlin", "Berlin", 52.5, 13.4],
+    ["GB", "GB-ENG", "England", "London", 51.5, -0.1],
+    ["FR", "FR-IDF", "Ile-de-France", "Paris", 48.9, 2.4],
+    ["TR", "TR-34", "Istanbul", "Istanbul", 41.0, 29.0],
+    ["IN", "IN-KA", "Karnataka", "Bengaluru", 13.0, 77.6],
+    ["JP", "JP-13", "Tokyo", "Tokyo", 35.7, 139.7],
+    ["BR", "BR-SP", "Sao Paulo", "Sao Paulo", -23.5, -46.6],
+    ["AU", "AU-NSW", "New South Wales", "Sydney", -33.9, 151.2],
+    ["CA", "CA-ON", "Ontario", "Toronto", 43.7, -79.4],
+  ];
   let count = 0;
   let seed = 42;
   const rnd = (): number => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -226,7 +243,15 @@ async function seedDemo(store: SqliteStore, site: Site, days: number): Promise<n
       const ua = rnd() > 0.6 ? IPHONE : CHROME;
       const referrer = refs[Math.floor(rnd() * refs.length)] ?? "";
       const path = paths[Math.floor(rnd() * paths.length)] ?? "/";
-      const ctx = { ip, userAgent: ua, now: ts, host: site.domain };
+      const pl = places[Math.floor(rnd() * places.length)]!;
+      const ctx = {
+        ip,
+        userAgent: ua,
+        now: ts,
+        host: site.domain,
+        country: pl[0],
+        geo: { region: pl[1], regionName: pl[2], city: pl[3], lat: pl[4], lon: pl[5] },
+      };
       await ing.ingest({ site: site.id, type: "pageview", url: path, referrer }, ctx);
       count++;
       // Some sessions go on to a second page — otherwise the bounce rate would be 100%.

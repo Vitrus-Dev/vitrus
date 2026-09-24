@@ -30,8 +30,12 @@ declare global {
   interface Window {
     vitrus?: {
       (name: string, props?: Record<string, string | number | boolean | null>): void;
-      /** The precondition for retention — see core/metrics/retention.ts. */
-      identify?: (id: string) => void;
+      /**
+       * The precondition for retention — see core/metrics/retention.ts.
+       * Optional traits are sent once as an "identify" event and stored as
+       * sent: only pass what your privacy notice covers.
+       */
+      identify?: (id: string, traits?: Record<string, string | number | boolean | null>) => void;
     };
   }
 }
@@ -50,6 +54,11 @@ declare global {
   // The tag: a release/variant marker ("v2", "experiment-b"). The browser-side
   // handle for deploy correlation — the same idea as Umami's `data-tag`.
   const tag = script.getAttribute("data-tag") || "";
+  // Hash-routed single-page apps (`#/settings`) navigate without changing the
+  // path. With `data-hash="true"` the route after "#/" is part of the page;
+  // the server keeps a fragment only when it starts with "#/", so an ordinary
+  // in-page anchor (#pricing) never becomes a separate page.
+  const hashMode = script.getAttribute("data-hash") === "true";
 
   // Do Not Track is RESPECTED by default. It can be disabled with
   // `data-do-not-track="false"`, but the default stays on — if a privacy stance
@@ -88,6 +97,18 @@ declare global {
     if (localStorage.getItem(IGNORE_KEY) === "1") return;
   } catch {
     // Private mode or storage disabled: there is simply no exclusion. Never a crash.
+  }
+
+  // — Session replay: opt-in, and a separate file —
+  // `data-replay` loads the recorder (r.js) lazily; a site without it pays zero
+  // bytes. The recorder gets this tag's attributes (same site, host and path
+  // patterns) and asks the server whether replay is enabled before recording.
+  // Placed after the Do Not Track and self-exclusion checks: both stop it too.
+  if (script.hasAttribute("data-replay")) {
+    const r = doc.createElement("script");
+    for (const a of Array.from(script.attributes)) r.setAttribute(a.name, a.value);
+    r.src = collect.slice(0, -12) + "/r.js";
+    doc.head.appendChild(r);
   }
 
   let lastPath = "";
@@ -179,7 +200,7 @@ declare global {
     const p: Payload = {
       site,
       type: "pageview",
-      url: maskPath(location.pathname) + location.search,
+      url: maskPath(location.pathname) + location.search + (hashMode && location.hash.indexOf("#/") === 0 ? location.hash : ""),
       // A same-origin referrer is NOT SENT: arriving from our own page is
       // navigation, not a "source". The server treats it as internal too;
       // cleaning it in both layers protects us when host matching slips behind a
@@ -208,7 +229,7 @@ declare global {
   }
 
   function pageview(): void {
-    const path = location.pathname + location.search;
+    const path = location.pathname + location.search + (hashMode ? location.hash : "");
     if (path === lastPath) return;
     // Order matters: flush the previous page's exit summary while `pageSkipped`
     // still describes THAT page, and only then switch to the new one.
@@ -241,6 +262,7 @@ declare global {
   patch("pushState");
   patch("replaceState");
   addEventListener("popstate", pageview);
+  if (hashMode) addEventListener("hashchange", pageview);
 
   if (!autoTrack) {
     exposeApi();
@@ -328,6 +350,10 @@ declare global {
           const u = new URL(href, location.href);
           if (u.origin !== location.origin) {
             event("outbound_click", { host: u.hostname, path: maskPath(location.pathname) });
+          } else if (/\.(pdf|zip|dmg|exe|msi|pkg|csv|xlsx?|docx?|pptx?|mp3|mp4|mov|gz|rar|7z|apk|epub)$/i.test(u.pathname)) {
+            // A same-site file download. The file's PATH is sent (masked like
+            // any path), never its query string.
+            event("file_download", { file: maskPath(u.pathname), path: maskPath(location.pathname) });
           }
         } catch {
           noop();
@@ -453,8 +479,9 @@ declare global {
 
   function exposeApi(): void {
     const api = ((n: string, p?: Payload["props"]) => event(n, p)) as NonNullable<Window["vitrus"]>;
-    api.identify = (id: string): void => {
+    api.identify = (id: string, traits?: Payload["props"]): void => {
       identity = String(id ?? "").slice(0, 200);
+      if (identity && traits) event("identify", traits);
     };
     window.vitrus = api;
   }

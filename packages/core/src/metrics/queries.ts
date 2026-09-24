@@ -79,6 +79,11 @@ export interface ParamContext {
   liveFrom: number;
   now: number;
   /**
+   * The viewer's UTC offset in ms (local = UTC + offset). Only the weekday/hour
+   * heatmap uses it; every window boundary is already an absolute instant.
+   */
+  tzOffsetMs: number;
+  /**
    * Values for the active dashboard filters, in declaration order.
    *
    * A custom parameter builder must append these after ITS window predicate,
@@ -104,8 +109,10 @@ export interface MetricDef {
   params?: (ctx: ParamContext) => unknown[];
   /** Vertical filter: which kind of site this metric is meaningful for. */
   verticals?: ("landing" | "shopify" | "generic")[];
-  /** When true, no `compare` window is computed (meaningless for series and live metrics). */
+  /** When true, no `compare` window is computed for a scalar (meaningless for live metrics). */
   noCompare?: boolean;
+  /** For a series: the columns every bucket carries, so an empty window still has its shape. */
+  seriesColumns?: readonly string[];
 }
 
 const WINDOW = `site_id = ? AND ts >= ? AND ts < ?`;
@@ -122,6 +129,7 @@ export const METRICS: readonly MetricDef[] = [
     kind: "series",
     unit: "count",
     noCompare: true,
+    seriesColumns: ["views", "visitors", "sessions", "events"],
     sql: `SELECT CAST((ts - ?) / ? AS INTEGER) AS bucket,
                  COUNT(*) FILTER (WHERE type = 'pageview')      AS views,
                  COUNT(DISTINCT visitor_id)                     AS visitors,
@@ -129,6 +137,47 @@ export const METRICS: readonly MetricDef[] = [
                  COUNT(*) FILTER (WHERE type = 'event')         AS events
             FROM events
            WHERE site_id = ? AND ts >= ? AND ts < ? AND ${HUMAN}
+           GROUP BY bucket ORDER BY bucket ASC`,
+    params: (c) => [c.from, c.bucketMs, c.siteId, c.from, c.to, ...c.filterValues],
+  },
+  {
+    // The per-bucket version of the session KPIs, bucketed by the session's
+    // START. Each column is computed with the same definition as its scalar
+    // (bounce.rate, visit.duration, views.per_session) so a sparkline and the
+    // number above it can never disagree about what the metric means. Empty
+    // buckets come back NULL for the ratios — an hour with no sessions has no
+    // bounce rate, and drawing it as 0% would be a claim.
+    id: "timeseries.sessions",
+    label: "Session quality over time",
+    kind: "series",
+    unit: "count",
+    noCompare: true,
+    seriesColumns: ["sessions", "bounce_rate", "duration", "pages_per_session"],
+    sql: `SELECT CAST((start - ?) / ? AS INTEGER) AS bucket,
+                 COUNT(*) AS sessions,
+                 ROUND(100.0 * SUM(CASE WHEN pv = 1 THEN 1 ELSE 0 END)
+                       / NULLIF(SUM(CASE WHEN pv > 0 THEN 1 ELSE 0 END), 0), 1) AS bounce_rate,
+                 ROUND(AVG(span), 0) AS duration,
+                 ROUND(1.0 * SUM(pv) / COUNT(*), 2) AS pages_per_session
+            FROM (SELECT session_id, MIN(ts) AS start, (MAX(ts) - MIN(ts)) / 1000.0 AS span,
+                         COUNT(*) FILTER (WHERE type = 'pageview') AS pv
+                    FROM events
+                   WHERE site_id = ? AND ts >= ? AND ts < ? AND ${HUMAN}
+                   GROUP BY session_id)
+           GROUP BY bucket ORDER BY bucket ASC`,
+    params: (c) => [c.from, c.bucketMs, c.siteId, c.from, c.to, ...c.filterValues],
+  },
+  {
+    id: "errors.series",
+    label: "Errors over time",
+    kind: "series",
+    unit: "count",
+    noCompare: true,
+    seriesColumns: ["errors", "sessions"],
+    sql: `SELECT CAST((ts - ?) / ? AS INTEGER) AS bucket,
+                 COUNT(*) AS errors, COUNT(DISTINCT session_id) AS sessions
+            FROM events
+           WHERE site_id = ? AND ts >= ? AND ts < ? AND ${HUMAN} AND name = 'error'
            GROUP BY bucket ORDER BY bucket ASC`,
     params: (c) => [c.from, c.bucketMs, c.siteId, c.from, c.to, ...c.filterValues],
   },
@@ -258,7 +307,45 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT path, COUNT(*) AS views, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview'
-           GROUP BY path ORDER BY views DESC, path ASC LIMIT 10`,
+           GROUP BY path ORDER BY views DESC, path ASC LIMIT 100`,
+  },
+  {
+    id: "titles.top",
+    label: "Page titles",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT title, COUNT(*) AS views, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview' AND title <> ''
+           GROUP BY title ORDER BY views DESC, title ASC LIMIT 100`,
+  },
+  {
+    // Client-reported (see RawEvent.hostname). Its use is telling production
+    // from a staging or preview copy that shares the same site id.
+    id: "hostnames.top",
+    label: "Hostnames",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT hostname, COUNT(*) AS views, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview' AND hostname <> ''
+           GROUP BY hostname ORDER BY views DESC, hostname ASC LIMIT 100`,
+  },
+  {
+    // Time on page = the gap to the NEXT pageview in the same session. The last
+    // page of a session has no next pageview and therefore no measured time; it
+    // is left out of the average rather than counted as 0s, which would drag
+    // every exit page towards zero. Umami measures it the same way.
+    id: "pages.detail",
+    label: "Pages",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT path, COUNT(*) AS views, COUNT(DISTINCT session_id) AS sessions,
+                 COUNT(DISTINCT visitor_id) AS visitors,
+                 ROUND(AVG(CASE WHEN next_ts IS NOT NULL THEN (next_ts - ts) / 1000.0 END), 0) AS avg_time,
+                 SUM(CASE WHEN next_ts IS NULL THEN 1 ELSE 0 END) AS exits
+            FROM (SELECT path, session_id, visitor_id, ts,
+                         LEAD(ts) OVER (PARTITION BY session_id ORDER BY ts ASC, id ASC) AS next_ts
+                    FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview')
+           GROUP BY path ORDER BY views DESC, path ASC LIMIT 200`,
   },
   {
     id: "referrers.top",
@@ -267,16 +354,36 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT referrer_host, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND referrer_host <> ''
-           GROUP BY referrer_host ORDER BY sessions DESC, referrer_host ASC LIMIT 10`,
+           GROUP BY referrer_host ORDER BY sessions DESC, referrer_host ASC LIMIT 100`,
   },
   {
     id: "events.top",
     label: "Custom events",
     kind: "rows",
     unit: "count",
-    sql: `SELECT name, COUNT(*) AS count
+    sql: `SELECT name, COUNT(*) AS count, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'event'
-           GROUP BY name ORDER BY count DESC, name ASC LIMIT 15`,
+           GROUP BY name ORDER BY count DESC, name ASC LIMIT 100`,
+  },
+  {
+    // The tracker records the destination HOST only — a full outbound URL can
+    // carry someone else's query string, and it is not ours to store.
+    id: "outbound.links",
+    label: "Outbound links",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT json_extract(props, '$.host') AS host, COUNT(*) AS clicks, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND name = 'outbound_click'
+           GROUP BY host ORDER BY clicks DESC, host ASC LIMIT 100`,
+  },
+  {
+    id: "downloads.files",
+    label: "File downloads",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT json_extract(props, '$.file') AS file, COUNT(*) AS downloads, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND name = 'file_download'
+           GROUP BY file ORDER BY downloads DESC, file ASC LIMIT 100`,
   },
   {
     id: "devices.sessions",
@@ -294,7 +401,7 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT browser, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN}
-           GROUP BY browser ORDER BY sessions DESC, browser ASC LIMIT 10`,
+           GROUP BY browser ORDER BY sessions DESC, browser ASC LIMIT 50`,
   },
   {
     id: "os.sessions",
@@ -303,7 +410,7 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT os, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN}
-           GROUP BY os ORDER BY sessions DESC, os ASC LIMIT 10`,
+           GROUP BY os ORDER BY sessions DESC, os ASC LIMIT 50`,
   },
   {
     id: "screens.sessions",
@@ -312,7 +419,7 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT screen, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND screen <> ''
-           GROUP BY screen ORDER BY sessions DESC, screen ASC LIMIT 10`,
+           GROUP BY screen ORDER BY sessions DESC, screen ASC LIMIT 100`,
   },
   {
     id: "languages.sessions",
@@ -321,7 +428,7 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT lang, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND lang <> ''
-           GROUP BY lang ORDER BY sessions DESC, lang ASC LIMIT 10`,
+           GROUP BY lang ORDER BY sessions DESC, lang ASC LIMIT 100`,
   },
   {
     // Country comes ONLY FROM A PROXY HEADER (Cloudflare/Vercel/Fly). We do not
@@ -335,7 +442,27 @@ export const METRICS: readonly MetricDef[] = [
     unit: "count",
     sql: `SELECT country, COUNT(DISTINCT session_id) AS sessions
             FROM events WHERE ${WINDOW} AND ${HUMAN} AND country <> ''
-           GROUP BY country ORDER BY sessions DESC, country ASC LIMIT 15`,
+           GROUP BY country ORDER BY sessions DESC, country ASC LIMIT 250`,
+  },
+  {
+    // Subdivision and city come from the same proxy headers as the country
+    // (see geo.ts); empty when the proxy does not send them.
+    id: "regions.sessions",
+    label: "Regions",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT region, MAX(region_name) AS region_name, MAX(country) AS country, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND region <> ''
+           GROUP BY region ORDER BY sessions DESC, region ASC LIMIT 100`,
+  },
+  {
+    id: "cities.sessions",
+    label: "Cities",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT city, MAX(country) AS country, COUNT(DISTINCT session_id) AS sessions
+            FROM events WHERE ${WINDOW} AND ${HUMAN} AND city <> ''
+           GROUP BY city ORDER BY sessions DESC, city ASC LIMIT 100`,
   },
   {
     id: "entry.pages",
@@ -345,7 +472,7 @@ export const METRICS: readonly MetricDef[] = [
     sql: `SELECT path, COUNT(*) AS sessions
             FROM (SELECT session_id, path, ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY ts ASC, id ASC) AS rn
                     FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview')
-           WHERE rn = 1 GROUP BY path ORDER BY sessions DESC, path ASC LIMIT 10`,
+           WHERE rn = 1 GROUP BY path ORDER BY sessions DESC, path ASC LIMIT 100`,
   },
   {
     id: "exit.pages",
@@ -355,7 +482,7 @@ export const METRICS: readonly MetricDef[] = [
     sql: `SELECT path, COUNT(*) AS sessions
             FROM (SELECT session_id, path, ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY ts DESC, id DESC) AS rn
                     FROM events WHERE ${WINDOW} AND ${HUMAN} AND type = 'pageview')
-           WHERE rn = 1 GROUP BY path ORDER BY sessions DESC, path ASC LIMIT 10`,
+           WHERE rn = 1 GROUP BY path ORDER BY sessions DESC, path ASC LIMIT 100`,
   },
   {
     id: "utm.campaigns",
@@ -369,6 +496,37 @@ export const METRICS: readonly MetricDef[] = [
            GROUP BY utm_source, utm_medium, utm_campaign
            ORDER BY sessions DESC, campaign ASC LIMIT 15`,
   },
+  // One metric per UTM parameter, so each can be a tab and a filter of its own.
+  // The combined table above stays for the Campaigns page.
+  ...(["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const).map(
+    (col): MetricDef => ({
+      id: `utm.${col.slice(4)}`,
+      label: `UTM ${col.slice(4)}`,
+      kind: "rows",
+      unit: "count",
+      sql: `SELECT ${col}, COUNT(DISTINCT session_id) AS sessions
+              FROM events WHERE ${WINDOW} AND ${HUMAN} AND ${col} <> ''
+             GROUP BY ${col} ORDER BY sessions DESC, ${col} ASC LIMIT 100`,
+    })
+  ),
+  {
+    // Weekday × hour, in the VIEWER'S time zone — "Tuesdays at 9" means the
+    // reader's Tuesday. A session active across two hours counts in both cells,
+    // so the cells are "sessions active in this hour", not a partition of the
+    // session total; the card says so.
+    id: "heatmap.weekhour",
+    label: "Sessions by weekday and hour",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT CAST(strftime('%w', (ts + ?) / 1000, 'unixepoch') AS INTEGER) AS dow,
+                 CAST(strftime('%H', (ts + ?) / 1000, 'unixepoch') AS INTEGER) AS hour,
+                 COUNT(DISTINCT session_id) AS sessions
+            FROM events
+           WHERE site_id = ? AND ts >= ? AND ts < ? AND ${HUMAN}
+           GROUP BY dow, hour ORDER BY dow, hour`,
+    params: (c) => [c.tzOffsetMs, c.tzOffsetMs, c.siteId, c.from, c.to, ...c.filterValues],
+  },
+
   // ——— Automation signals (layer two) ———
   // Recorded, never self-applying. The dashboard shows what WOULD be excluded
   // and which rule fired, and excluding it is the operator's decision.
@@ -558,6 +716,24 @@ export const METRICS: readonly MetricDef[] = [
             FROM events
            WHERE ${WINDOW} AND ${HUMAN} AND name = 'error'
            GROUP BY message, path ORDER BY hits DESC LIMIT 10`,
+  },
+  {
+    // Grouped the way a developer fixes errors: by message AND where it was
+    // thrown. The same message from two files is two bugs.
+    id: "errors.groups",
+    label: "Errors, grouped",
+    kind: "rows",
+    unit: "count",
+    sql: `SELECT json_extract(props,'$.message') AS message,
+                 json_extract(props,'$.source') AS source,
+                 json_extract(props,'$.line') AS line,
+                 COUNT(*) AS hits,
+                 COUNT(DISTINCT session_id) AS sessions,
+                 COUNT(DISTINCT path) AS pages,
+                 MIN(ts) AS first_seen, MAX(ts) AS last_seen
+            FROM events
+           WHERE ${WINDOW} AND ${HUMAN} AND name = 'error'
+           GROUP BY message, source, line ORDER BY sessions DESC, hits DESC LIMIT 100`,
   },
   {
     id: "errors.browsers",

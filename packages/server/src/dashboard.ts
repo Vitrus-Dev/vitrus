@@ -15,7 +15,7 @@
 // metric added to `metrics/queries.ts` appears here without anyone remembering
 // to come back.
 
-import type { Site } from "@vitrus/core";
+import { REPLAY_PLAYER_JS, type Site } from "@vitrus/core";
 
 export function dashboardHtml(sites: Site[]): string {
   const options = sites.length
@@ -94,6 +94,9 @@ export function dashboardHtml(sites: Site[]): string {
     <div id="lines"><div class="empty">loading…</div></div>
   </div>
   <div id="tables"></div>
+  <h2 class="sec">Session replay</h2>
+  <div class="tbl" id="replay"><div class="empty">loading…</div></div>
+  <div id="replay-player" style="margin-top:14px"></div>
 </main>
 <footer>Click the <code>e#</code> badge next to any number to see the query that ran and the raw rows. Nothing is invented.</footer>
 
@@ -228,9 +231,74 @@ function showEvidence(id) {
 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
+/* ——— Session replay (opt-in; off until switched on here) ———
+   The player engine is core's (replay-player.ts), shared with the hosted
+   dashboard. Recordings render in a sandboxed frame where no script runs. */
+${REPLAY_PLAYER_JS}
+let replayPlayer = null;
+
+async function loadReplays() {
+  const box = document.getElementById("replay");
+  const site = document.getElementById("site").value;
+  if (!site) { box.innerHTML = ""; return; }
+  const days = document.getElementById("days").value;
+  const r = await fetch("/api/replays?site=" + encodeURIComponent(site) + "&days=" + days).then(x => x.json());
+  const s = r.settings;
+  const form =
+    '<p style="margin:0 0 10px;color:var(--dim);font-size:13px">Off by default. When on, text and inputs are masked, password and card fields are never captured, ' +
+    'and the page needs <code>data-replay</code> on the tracker tag. Visitors with Do Not Track are never recorded.</p>' +
+    '<label><input type="checkbox" id="rp-on"' + (s.enabled ? " checked" : "") + "> Record sessions</label> · " +
+    'sample <input id="rp-rate" type="number" min="0.01" max="1" step="0.01" value="' + s.sampleRate + '" style="width:70px"> · ' +
+    'max <input id="rp-max" type="number" min="1" max="120" value="' + s.maxMinutes + '" style="width:60px"> min · ' +
+    'keep <input id="rp-ret" type="number" min="1" max="90" value="' + s.retentionDays + '" style="width:60px"> days · ' +
+    '<label><input type="checkbox" id="rp-media"' + (s.blockMedia ? " checked" : "") + "> Hide images</label> " +
+    '<button class="chip" onclick="saveReplaySettings()">save</button> <span id="rp-msg" style="color:var(--dim);font-size:12px"></span>';
+  const rows = r.replays.map(x =>
+    "<tr><td>" + escapeHtml(x.name) + "</td><td>" + new Date(x.started_at).toLocaleString() + "</td><td>" +
+    Math.round(x.duration_ms / 1000) + "s</td><td>" + x.pages + "</td><td>" + x.clicks + "</td><td>" + x.errors + "</td><td>" +
+    escapeHtml(x.device + " · " + x.browser) + "</td><td>" + escapeHtml(x.country || "—") + "</td>" +
+    '<td><button class="chip" onclick="watchReplay(&quot;' + x.id + '&quot;)">watch</button> ' +
+    '<button class="chip" onclick="deleteReplay(&quot;' + x.id + '&quot;)">delete</button></td></tr>').join("");
+  box.innerHTML = form + '<h3 style="margin-top:16px">' + r.total + " recordings · kept " + r.retentionDays + " days</h3>" +
+    (rows ? "<table><tr><th>Visitor</th><th>Started</th><th>Length</th><th>Pages</th><th>Clicks</th><th>Errors</th><th>Device</th><th>Country</th><th></th></tr>" + rows + "</table>"
+          : '<div class="empty">No recordings in this window.</div>') +
+    "<details><summary style=\\"color:var(--dim);font-size:12px;cursor:pointer\\">Query that counted them</summary><pre>" + escapeHtml(r.sql) + "</pre><pre>" + escapeHtml(JSON.stringify(r.params)) + "</pre></details>";
+}
+
+async function saveReplaySettings() {
+  const site = document.getElementById("site").value;
+  const body = {
+    enabled: document.getElementById("rp-on").checked,
+    sampleRate: Number(document.getElementById("rp-rate").value),
+    maxMinutes: Number(document.getElementById("rp-max").value),
+    retentionDays: Number(document.getElementById("rp-ret").value),
+    blockMedia: document.getElementById("rp-media").checked
+  };
+  const r = await fetch("/api/replay/settings?site=" + encodeURIComponent(site), { method: "PUT", body: JSON.stringify(body) }).then(x => x.json());
+  document.getElementById("rp-msg").textContent = r.ok ? "saved" : "not saved: " + r.reason;
+}
+
+async function watchReplay(id) {
+  const site = document.getElementById("site").value;
+  const r = await fetch("/api/replays/" + id + "?site=" + encodeURIComponent(site)).then(x => x.json());
+  if (replayPlayer) replayPlayer.destroy();
+  replayPlayer = vrPlayer(document.getElementById("replay-player"), r);
+  document.getElementById("replay-player").scrollIntoView({ behavior: "smooth" });
+}
+
+async function deleteReplay(id) {
+  const site = document.getElementById("site").value;
+  await fetch("/api/replays/" + id + "?site=" + encodeURIComponent(site), { method: "DELETE" });
+  if (replayPlayer) { replayPlayer.destroy(); replayPlayer = null; }
+  loadReplays();
+}
+
 document.getElementById("site").addEventListener("change", load);
 document.getElementById("days").addEventListener("change", load);
+document.getElementById("site").addEventListener("change", loadReplays);
+document.getElementById("days").addEventListener("change", loadReplays);
 load();
+loadReplays();
 </script>
 </body>
 </html>`;

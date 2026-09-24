@@ -14,6 +14,7 @@
 // who signs up and then browses the pricing page counts as "converted" and the
 // funnel inflates.
 
+import { applyFilters, filterValues, resolvePatternFilters, type Filter } from "./filters.ts";
 import { AGENT_SESSION, HUMAN } from "./queries.ts";
 
 export type FunnelStepType = "page" | "event";
@@ -142,6 +143,12 @@ export interface FunnelQuery {
   steps: FunnelStep[];
   /** Defaults to "human" — the existing behaviour for every existing caller. */
   audience?: Audience;
+  /**
+   * Dashboard filters, compiled into EVERY step's window predicate — a funnel
+   * "for German mobile visitors" narrows each step, not only the first, or a
+   * later step would count people the first step excluded.
+   */
+  filters?: readonly Filter[];
 }
 
 export async function computeFunnel(
@@ -149,10 +156,12 @@ export async function computeFunnel(
   q: FunnelQuery
 ): Promise<FunnelResult> {
   const steps = validateSteps(q.steps);
-  const { sql } = buildFunnelSql(steps, q.audience ?? "human");
+  const filters = await resolvePatternFilters(select, q.siteId, q.filters ?? []);
+  const sql = applyFilters(buildFunnelSql(steps, q.audience ?? "human").sql, filters);
+  const fv = filterValues(filters, q.siteId);
 
   const params: unknown[] = [];
-  for (const step of steps) params.push(q.siteId, q.from, q.to, step.value);
+  for (const step of steps) params.push(q.siteId, q.from, q.to, ...fv, step.value);
 
   const rows = await select<Record<string, number>>(sql, params);
   const row = rows[0] ?? {};

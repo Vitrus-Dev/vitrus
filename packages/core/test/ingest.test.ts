@@ -4,6 +4,11 @@ import { visitorId } from "../src/visitor.ts";
 import { CHROME, DAY, MIN, SITE, freshStore, ingestorFor, send } from "./helpers.ts";
 
 describe("splitUrl", () => {
+  test("a hash-router route is kept, an in-page anchor is not", () => {
+    expect(splitUrl("/#/settings").path).toBe("/#/settings");
+    expect(splitUrl("/docs#install").path).toBe("/docs");
+  });
+
   test("splits path/query, drops the fragment, normalises the trailing slash", () => {
     expect(splitUrl("https://example.com/fiyat/?a=1#x")).toEqual({ path: "/fiyat", query: "?a=1", host: "example.com" });
     expect(splitUrl("/")).toMatchObject({ path: "/" });

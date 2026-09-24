@@ -5,6 +5,7 @@
 import { Database } from "bun:sqlite";
 import type { Site, StoredEvent } from "../types.ts";
 import { SCHEMA_VERSION, type Store } from "./store.ts";
+import { REPLAY_DDL } from "../replay.ts";
 
 const TABLES = `
 CREATE TABLE IF NOT EXISTS meta (
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS events (
   path          TEXT NOT NULL,
   query         TEXT NOT NULL DEFAULT '',
   title         TEXT NOT NULL DEFAULT '',
+  hostname      TEXT NOT NULL DEFAULT '',
   referrer      TEXT NOT NULL DEFAULT '',
   referrer_host TEXT NOT NULL DEFAULT '',
   channel       TEXT NOT NULL,
@@ -47,6 +49,14 @@ CREATE TABLE IF NOT EXISTS events (
   screen        TEXT NOT NULL DEFAULT '',
   lang          TEXT NOT NULL DEFAULT '',
   country       TEXT NOT NULL DEFAULT '',
+  -- Sub-country location from the proxy (core/geo.ts). region is ISO 3166-2
+  -- with the country prefix ("US-TX"). lat/lon are rounded to 0.1 degree and
+  -- NULL when unknown — never 0, which is a real coordinate.
+  region        TEXT NOT NULL DEFAULT '',
+  region_name   TEXT NOT NULL DEFAULT '',
+  city          TEXT NOT NULL DEFAULT '',
+  lat           REAL,
+  lon           REAL,
   tag           TEXT NOT NULL DEFAULT '',
   identity      TEXT NOT NULL DEFAULT '',
   bot_kind      TEXT NOT NULL DEFAULT '',
@@ -111,6 +121,9 @@ export class SqliteStore implements Store {
     this.db.exec(TABLES);
     this.addMissingColumns();
     this.db.exec(INDEXES);
+    // Replay tables are created on every install and stay empty until a site
+    // opts in — creating them lazily would mean a first recording racing a DDL.
+    this.db.exec(REPLAY_DDL);
     const current = await this.getMeta("schema_version");
     if (current === null) await this.setMeta("schema_version", SCHEMA_VERSION);
   }
@@ -139,6 +152,13 @@ export class SqliteStore implements Store {
       { table: "events", column: "agent_signer", ddl: "TEXT NOT NULL DEFAULT ''" },
       { table: "events", column: "bot_signals", ddl: "TEXT NOT NULL DEFAULT ''" },
       { table: "events", column: "bot_score", ddl: "INTEGER NOT NULL DEFAULT 0" },
+      { table: "events", column: "hostname", ddl: "TEXT NOT NULL DEFAULT ''" },
+      { table: "events", column: "region", ddl: "TEXT NOT NULL DEFAULT ''" },
+      { table: "events", column: "region_name", ddl: "TEXT NOT NULL DEFAULT ''" },
+      { table: "events", column: "city", ddl: "TEXT NOT NULL DEFAULT ''" },
+      // Nullable on purpose: an old row's location is unknown, not (0, 0).
+      { table: "events", column: "lat", ddl: "REAL" },
+      { table: "events", column: "lon", ddl: "REAL" },
     ];
     for (const a of ADDITIONS) {
       const cols = this.db.query<{ name: string }, []>(`PRAGMA table_info(${a.table})`).all();
@@ -224,8 +244,9 @@ export class SqliteStore implements Store {
            referrer, referrer_host, channel, source,
            utm_source, utm_medium, utm_campaign, utm_term, utm_content,
            device, os, browser, screen, lang, country, tag, identity, bot_kind, bot_name,
-           agent_trust, agent_signer, bot_signals, bot_score, props)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+           agent_trust, agent_signer, bot_signals, bot_score, props, hostname,
+           region, region_name, city, lat, lon)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       );
     }
     return this.insertStmt;
@@ -279,5 +300,11 @@ function eventParams(e: StoredEvent): unknown[] {
     e.botSignals ?? "",
     e.botScore ?? 0,
     JSON.stringify(e.props ?? {}),
+    e.hostname ?? "",
+    e.region ?? "",
+    e.regionName ?? "",
+    e.city ?? "",
+    typeof e.lat === "number" ? e.lat : null,
+    typeof e.lon === "number" ? e.lon : null,
   ];
 }

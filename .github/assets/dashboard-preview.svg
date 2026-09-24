@@ -1,95 +1,128 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" width="920" height="560" role="img"
-     aria-label="Illustration of the Vitrus dashboard: an overview with metric cards, a trend chart, a channel breakdown and the SQL evidence panel open beside it.">
+     aria-label="Illustration of the Vitrus dashboard: an overview with a KPI strip, a trend chart, a channel breakdown and the SQL evidence panel open beside it.">
   <style>
-    .f  { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .f  { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     .m  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .dim { fill:#6f7c8a; } .fg { fill:#e9eef3; } .acc { fill:#5bc8af; } .warn { fill:#e0a458; }
+    .dim { fill:#8b9099; } .faint { fill:#5d626b; } .fg { fill:#ececee; } .acc { fill:#5bc8af; } .warn { fill:#e0a458; }
   </style>
-  <rect width="920" height="560" rx="12" fill="#0f1318"/>
-<rect x="0" y="0" width="920" height="34" rx="12" fill="#171c22"/>
-     <rect x="0" y="22" width="920" height="12" fill="#171c22"/>
-     <line x1="0" y1="34" x2="920" y2="34" stroke="#232a32"/>
-<circle cx="16" cy="17" r="4.5" fill="#2c343d"/>
-<circle cx="32" cy="17" r="4.5" fill="#2c343d"/>
-<circle cx="48" cy="17" r="4.5" fill="#2c343d"/>
-<text x="70" y="21" class="m dim" font-size="11">app.vitrus.dev/app</text>
-<rect x="702" y="8" width="204" height="19" rx="9.5" fill="#241c0c" stroke="#6b4f1c"/>
-     <text x="804" y="21" class="f" font-size="10" fill="#c99a3f" text-anchor="middle"
+  <rect width="920" height="560" rx="12" fill="#0b0c0e"/>
+<rect x="0" y="0" width="920" height="34" rx="12" fill="#181a1e"/>
+     <rect x="0" y="22" width="920" height="12" fill="#181a1e"/>
+     <line x1="0" y1="34" x2="920" y2="34" stroke="#23262b"/>
+<circle cx="16" cy="17" r="4.5" fill="#2a2d33"/>
+<circle cx="32" cy="17" r="4.5" fill="#2a2d33"/>
+<circle cx="48" cy="17" r="4.5" fill="#2a2d33"/>
+<text x="70" y="21" class="m faint" font-size="11">app.vitrus.dev/app</text>
+<rect x="688" y="8" width="218" height="19" rx="9.5" fill="#241c0c" stroke="#6b4f1c"/>
+     <text x="797" y="21" class="f" font-size="9.5" fill="#c99a3f" text-anchor="middle"
        letter-spacing="0.6">ILLUSTRATION · NOT A LIVE ACCOUNT</text>
-<rect x="0" y="34" width="168" height="526" fill="#12161b"/>
-     <line x1="168" y1="34" x2="168" y2="560" stroke="#232a32"/>
-     <text x="18" y="64" class="f fg" font-size="15" font-weight="650">vitrus<tspan class="acc">.</tspan></text>
-<text x="18" y="92" class="f dim" font-size="9" font-weight="700" letter-spacing="1.1">ANALYTICS</text>
-<rect x="10" y="95" width="148" height="22" rx="6" fill="#1c222a"/>
-<text x="18" y="110" class="f fg" font-size="12">Overview</text>
-<text x="18" y="134" class="f dim" font-size="12">AI traffic</text>
-<text x="18" y="158" class="f dim" font-size="12">Behaviour</text>
-<text x="18" y="182" class="f dim" font-size="12">Performance</text>
-<text x="18" y="206" class="f dim" font-size="12">Errors</text>
-<text x="18" y="230" class="f dim" font-size="12">Funnel</text>
-<text x="18" y="254" class="f dim" font-size="12">Retention</text>
-<text x="18" y="281" class="f dim" font-size="9" font-weight="700" letter-spacing="1.1">WORKSPACE</text>
-<text x="18" y="299" class="f dim" font-size="12">Digest</text>
-<text x="18" y="323" class="f dim" font-size="12">Install</text>
-<text x="18" y="347" class="f dim" font-size="12">Team</text>
-<text x="18" y="371" class="f dim" font-size="12">Billing</text>
-<text x="18" y="395" class="f dim" font-size="12">Support</text>
-<rect x="188" y="50" width="86.2" height="21" rx="6" fill="#12161b" stroke="#232a32"/>
-       <text x="197" y="64" class="f dim" font-size="11">Acme Retail</text>
-<rect x="281.2" y="50" width="92.4" height="21" rx="6" fill="#12161b" stroke="#232a32"/>
-       <text x="290.2" y="64" class="f dim" font-size="11">acme.example</text>
-<rect x="380.6" y="50" width="86.2" height="21" rx="6" fill="#12161b" stroke="#232a32"/>
-       <text x="389.6" y="64" class="f dim" font-size="11">Last 7 days</text>
-<circle cx="804" cy="60" r="3.5" class="acc"/>
-     <text x="814" y="64" class="f acc" font-size="11">12 online now</text>
-<rect x="188" y="84" width="171.25" height="70" rx="9" fill="#12161b" stroke="#232a32"/>
-       <text x="201" y="104" class="f dim" font-size="10">Unique visitors</text>
-       <text x="201" y="128" class="f fg" font-size="21" font-weight="600">2,481</text>
-       <text x="201" y="144" class="f acc" font-size="10.5">▲ 12.4%</text>
-<rect x="368.25" y="84" width="171.25" height="70" rx="9" fill="#12161b" stroke="#232a32"/>
-       <text x="381.25" y="104" class="f dim" font-size="10">Sessions</text>
-       <text x="381.25" y="128" class="f fg" font-size="21" font-weight="600">3,104</text>
-       <text x="381.25" y="144" class="f acc" font-size="10.5">▲ 9.1%</text>
-<rect x="548.5" y="84" width="171.25" height="70" rx="9" fill="#12161b" stroke="#232a32"/>
-       <text x="561.5" y="104" class="f dim" font-size="10">Pageviews</text>
-       <text x="561.5" y="128" class="f fg" font-size="21" font-weight="600">7,922</text>
-       <text x="561.5" y="144" class="f warn" font-size="10.5">▼ 2.0%</text>
-<rect x="728.75" y="84" width="171.25" height="70" rx="9" fill="#12161b" stroke="#232a32"/>
-       <text x="741.75" y="104" class="f dim" font-size="10">Bounce rate</text>
-       <text x="741.75" y="128" class="f fg" font-size="21" font-weight="600">41.2%</text>
-       <text x="741.75" y="144" class="f acc" font-size="10.5">▲ 1.1%</text>
-<rect x="188" y="168" width="712" height="150" rx="9" fill="#12161b" stroke="#232a32"/>
-     <text x="202" y="189" class="f dim" font-size="10" letter-spacing="0.9">TREND</text>
-     <rect x="804" y="178" width="82" height="16" rx="8" fill="none" stroke="#2a323b"/>
-     <text x="845" y="189" class="m dim" font-size="9" text-anchor="middle">e3 · evidence</text>
-<line x1="202" y1="227.5" x2="886" y2="227.5" stroke="#1e242c"/>
-<line x1="202" y1="253" x2="886" y2="253" stroke="#1e242c"/>
-<line x1="202" y1="278.5" x2="886" y2="278.5" stroke="#1e242c"/>
-<path d="M204.0 257.8 L289.0 244.3 L374.0 251.0 L459.0 229.0 L544.0 236.6 L629.0 217.4 L714.0 224.2 L799.0 210.7 L884.0 213.6" fill="none" stroke="#7c8cf8" stroke-width="2" stroke-linejoin="round"/>
-<path d="M204.0 281.2 L289.0 271.4 L374.0 276.3 L459.0 260.2 L544.0 265.8 L629.0 251.8 L714.0 256.7 L799.0 246.9 L884.0 249.0" fill="none" stroke="#5bc8af" stroke-width="2" stroke-linejoin="round"/>
-<rect x="188" y="330" width="280.8" height="214" rx="9" fill="#12161b" stroke="#232a32"/>
-     <text x="202" y="350" class="f dim" font-size="10" letter-spacing="0.9">CHANNELS</text>
-<text x="202" y="372" class="f dim" font-size="11.5">AI assistants</text>
-       <text x="454.8" y="372" class="f fg" font-size="11.5" text-anchor="end">412</text>
-       <line x1="202" y1="379" x2="454.8" y2="379" stroke="#1a2028"/>
-<text x="202" y="394" class="f dim" font-size="11.5">Search</text>
-       <text x="454.8" y="394" class="f fg" font-size="11.5" text-anchor="end">1,208</text>
-       <line x1="202" y1="401" x2="454.8" y2="401" stroke="#1a2028"/>
-<text x="202" y="416" class="f dim" font-size="11.5">Direct</text>
-       <text x="454.8" y="416" class="f fg" font-size="11.5" text-anchor="end">846</text>
-       <line x1="202" y1="423" x2="454.8" y2="423" stroke="#1a2028"/>
-<text x="202" y="438" class="f dim" font-size="11.5">Social</text>
-       <text x="454.8" y="438" class="f fg" font-size="11.5" text-anchor="end">638</text>
-       
-<rect x="478.8" y="330" width="421.2" height="214" rx="9" fill="#12161b" stroke="#2f6b5d"/>
-     <text x="492.8" y="350" class="f" font-size="10" fill="#5bc8af" letter-spacing="0.9">e8 — THE QUERY THAT RAN</text>
-     <rect x="490.8" y="360" width="397.2" height="152" rx="6" fill="#0b0e12" stroke="#1e242c"/>
-<text x="500.8" y="378" class="m" font-size="10" fill="#b6c2ce">SELECT channel,</text>
-<text x="500.8" y="392" class="m" font-size="10" fill="#b6c2ce">       COUNT(DISTINCT session_id) AS sessions</text>
-<text x="500.8" y="406" class="m" font-size="10" fill="#b6c2ce">  FROM events</text>
-<text x="500.8" y="420" class="m" font-size="10" fill="#b6c2ce"> WHERE site_id = ?</text>
-<text x="500.8" y="434" class="m" font-size="10" fill="#b6c2ce">   AND ts >= ? AND ts &lt; ?</text>
-<text x="500.8" y="448" class="m" font-size="10" fill="#b6c2ce">   AND bot_kind = ''</text>
-<text x="500.8" y="462" class="m" font-size="10" fill="#b6c2ce"> GROUP BY channel</text>
-<text x="492.8" y="532" class="f dim" font-size="10">Click any number and this is what opens.</text>
+<rect x="0" y="34" width="168" height="526" fill="#0b0c0e"/>
+     <line x1="168" y1="34" x2="168" y2="560" stroke="#23262b"/>
+     <text x="18" y="62" class="f fg" font-size="14" font-weight="650" letter-spacing="-0.3">vitrus<tspan class="acc">.</tspan></text>
+<text x="18" y="88" class="f faint" font-size="9.5" font-weight="500">Web analytics</text>
+<rect x="10" y="91" width="148" height="20" rx="5" fill="#181a1e"/>
+           <rect x="10" y="91" width="2" height="20" fill="#5bc8af"/>
+<text x="18" y="105" class="f fg" font-size="11.5" font-weight="600">Main</text>
+<text x="18" y="126" class="f dim" font-size="11.5">Realtime</text>
+<text x="18" y="147" class="f dim" font-size="11.5">Globe</text>
+<text x="18" y="168" class="f dim" font-size="11.5">Pages</text>
+<text x="18" y="189" class="f dim" font-size="11.5">Performance</text>
+<text x="18" y="210" class="f dim" font-size="11.5">Goals</text>
+<text x="18" y="236" class="f faint" font-size="9.5" font-weight="500">Product analytics</text>
+<text x="18" y="253" class="f dim" font-size="11.5">Funnels</text>
+<text x="18" y="274" class="f dim" font-size="11.5">Journeys</text>
+<text x="18" y="295" class="f dim" font-size="11.5">Retention</text>
+<text x="18" y="321" class="f faint" font-size="9.5" font-weight="500">Behavior</text>
+<text x="18" y="338" class="f dim" font-size="11.5">Sessions</text>
+<text x="18" y="359" class="f dim" font-size="11.5">Users</text>
+<text x="18" y="380" class="f dim" font-size="11.5">Events</text>
+<text x="18" y="401" class="f dim" font-size="11.5">Errors</text>
+<text x="18" y="427" class="f faint" font-size="9.5" font-weight="500">AI &amp; agents</text>
+<text x="18" y="444" class="f dim" font-size="11.5">AI traffic</text>
+<text x="18" y="465" class="f dim" font-size="11.5">Agent identity</text>
+<text x="18" y="486" class="f dim" font-size="11.5">Traffic quality</text>
+<rect x="188" y="47" width="96.2" height="22" rx="5" fill="#111316" stroke="#23262b"/>
+       <text x="197" y="62" class="f fg" font-size="10.5" font-weight="500">Acme Retail</text>
+       <path d="M270.2 56.5l3 3 3-3" fill="none" stroke="#8b9099" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="291.2" y="47" width="102.4" height="22" rx="5" fill="#111316" stroke="#23262b"/>
+       <text x="300.2" y="62" class="f fg" font-size="10.5" font-weight="500">acme.example</text>
+       <path d="M379.6 56.5l3 3 3-3" fill="none" stroke="#8b9099" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="400.6" y="47" width="96.2" height="22" rx="5" fill="#111316" stroke="#23262b"/>
+       <text x="409.6" y="62" class="f fg" font-size="10.5" font-weight="500">Last 7 days</text>
+       <path d="M482.8 56.5l3 3 3-3" fill="none" stroke="#8b9099" stroke-width="1.2" stroke-linecap="round"/>
+<circle cx="511.8" cy="58" r="3.5" class="acc"/>
+     <text x="519.8" y="62" class="f acc" font-size="10.5" font-weight="500">12 online now</text>
+<line x1="168" y1="80" x2="920" y2="80" stroke="#23262b"/>
+<text x="188" y="104" class="f" fill="#d4d6da" font-size="13" font-weight="600">Main</text>
+<rect x="188" y="116" width="712" height="74" rx="9" fill="#111316" stroke="#23262b"/>
+<text x="202" y="136" class="f dim" font-size="10" font-weight="500">Unique visitors</text>
+       <text x="202" y="162" class="f fg" font-size="21" font-weight="600" letter-spacing="-0.5">2,481</text>
+       <rect x="202" y="169" width="44.400000000000006" height="14" rx="7" fill="#5bc8af" fill-opacity="0.14"/>
+       <text x="208" y="179.5" class="f acc" font-size="9" font-weight="600">▲ 12.4%</text>
+       <rect x="332" y="126" width="22" height="14" rx="7" fill="none" stroke="#23262b"/>
+       <text x="343" y="136" class="m faint" font-size="8" text-anchor="middle">e1</text>
+<line x1="366" y1="116" x2="366" y2="190" stroke="#23262b"/>
+<text x="380" y="136" class="f dim" font-size="10" font-weight="500">Sessions</text>
+       <text x="380" y="162" class="f fg" font-size="21" font-weight="600" letter-spacing="-0.5">3,104</text>
+       <rect x="380" y="169" width="39" height="14" rx="7" fill="#5bc8af" fill-opacity="0.14"/>
+       <text x="386" y="179.5" class="f acc" font-size="9" font-weight="600">▲ 9.1%</text>
+       <rect x="510" y="126" width="22" height="14" rx="7" fill="none" stroke="#23262b"/>
+       <text x="521" y="136" class="m faint" font-size="8" text-anchor="middle">e2</text>
+<line x1="544" y1="116" x2="544" y2="190" stroke="#23262b"/>
+<text x="558" y="136" class="f dim" font-size="10" font-weight="500">Pageviews</text>
+       <text x="558" y="162" class="f fg" font-size="21" font-weight="600" letter-spacing="-0.5">7,922</text>
+       <rect x="558" y="169" width="39" height="14" rx="7" fill="#e0a458" fill-opacity="0.14"/>
+       <text x="564" y="179.5" class="f warn" font-size="9" font-weight="600">▼ 2.0%</text>
+       <rect x="688" y="126" width="22" height="14" rx="7" fill="none" stroke="#23262b"/>
+       <text x="699" y="136" class="m faint" font-size="8" text-anchor="middle">e3</text>
+<line x1="722" y1="116" x2="722" y2="190" stroke="#23262b"/>
+<text x="736" y="136" class="f dim" font-size="10" font-weight="500">Bounce rate</text>
+       <text x="736" y="162" class="f fg" font-size="21" font-weight="600" letter-spacing="-0.5">41.2%</text>
+       <rect x="736" y="169" width="39" height="14" rx="7" fill="#5bc8af" fill-opacity="0.14"/>
+       <text x="742" y="179.5" class="f acc" font-size="9" font-weight="600">▲ 1.1%</text>
+       <rect x="866" y="126" width="22" height="14" rx="7" fill="none" stroke="#23262b"/>
+       <text x="877" y="136" class="m faint" font-size="8" text-anchor="middle">e4</text>
+<rect x="188" y="202" width="712" height="140" rx="9" fill="#111316" stroke="#23262b"/>
+     <text x="202" y="223" class="f dim" font-size="10.5" font-weight="600">Trend</text>
+     <rect x="804" y="212" width="82" height="16" rx="8" fill="none" stroke="#23262b"/>
+     <text x="845" y="223" class="m faint" font-size="9" text-anchor="middle">e5 · evidence</text>
+<line x1="202" y1="259" x2="886" y2="259" stroke="#1b1d21"/>
+<line x1="202" y1="282" x2="886" y2="282" stroke="#1b1d21"/>
+<line x1="202" y1="305" x2="886" y2="305" stroke="#1b1d21"/>
+<rect x="197.0" y="300.5" width="14" height="25.5" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="282.0" y="292.4" width="14" height="33.6" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="367.0" y="296.4" width="14" height="29.6" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="452.0" y="283.1" width="14" height="42.9" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="537.0" y="287.7" width="14" height="38.3" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="622.0" y="276.1" width="14" height="49.9" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="707.0" y="280.2" width="14" height="45.8" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="792.0" y="272.1" width="14" height="53.9" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<rect x="877.0" y="273.8" width="14" height="52.2" rx="2" fill="#5bc8af" fill-opacity="0.16"/>
+<path d="M204.0 284.4 L289.0 271.8 L374.0 278.1 L459.0 257.4 L544.0 264.6 L629.0 246.6 L714.0 252.9 L799.0 240.3 L884.0 243.0" fill="none" stroke="#8b95f9" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M204.0 307.0 L289.0 297.7 L374.0 302.3 L459.0 287.2 L544.0 292.4 L629.0 279.2 L714.0 283.9 L799.0 274.6 L884.0 276.6" fill="none" stroke="#5bc8af" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="188" y="354" width="294.84" height="190" rx="9" fill="#111316" stroke="#23262b"/>
+     <text x="202" y="374" class="f dim" font-size="10.5" font-weight="600">Channels</text>
+<rect x="202" y="386" width="266.8" height="20" rx="3" fill="#5bc8af" fill-opacity="0.13"/>
+       <text x="210" y="400" class="f fg" font-size="11">Search</text>
+       <text x="460.84" y="400" class="f fg" font-size="11" text-anchor="end">1,208</text>
+<rect x="202" y="410" width="186.9" height="20" rx="3" fill="#5bc8af" fill-opacity="0.13"/>
+       <text x="210" y="424" class="f fg" font-size="11">Direct</text>
+       <text x="460.84" y="424" class="f fg" font-size="11" text-anchor="end">846</text>
+<rect x="202" y="434" width="140.9" height="20" rx="3" fill="#5bc8af" fill-opacity="0.13"/>
+       <text x="210" y="448" class="f fg" font-size="11">Social</text>
+       <text x="460.84" y="448" class="f fg" font-size="11" text-anchor="end">638</text>
+<rect x="202" y="458" width="91.0" height="20" rx="3" fill="#5bc8af" fill-opacity="0.13"/>
+       <text x="210" y="472" class="f fg" font-size="11">AI assistants</text>
+       <text x="460.84" y="472" class="f fg" font-size="11" text-anchor="end">412</text>
+<rect x="492.84" y="354" width="407.16" height="190" rx="9" fill="#111316" stroke="#2f6b5d"/>
+     <text x="506.84" y="374" class="f" font-size="10.5" font-weight="600" fill="#5bc8af">e6 — the query that ran</text>
+     <rect x="504.84" y="384" width="383.16" height="132" rx="6" fill="#0b0c0e" stroke="#23262b"/>
+<text x="514.8399999999999" y="402" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve">SELECT channel,</text>
+<text x="514.8399999999999" y="415.5" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve">       COUNT(DISTINCT session_id) AS sessions</text>
+<text x="514.8399999999999" y="429" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve">  FROM events</text>
+<text x="514.8399999999999" y="442.5" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve"> WHERE site_id = ?</text>
+<text x="514.8399999999999" y="456" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve">   AND ts >= ? AND ts &lt; ?</text>
+<text x="514.8399999999999" y="469.5" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve">   AND bot_kind = ''</text>
+<text x="514.8399999999999" y="483" class="m" font-size="10" fill="#b9bdc4" xml:space="preserve"> GROUP BY channel</text>
+<text x="506.84" y="533" class="f dim" font-size="10">Click any number and this is what opens.</text>
 </svg>

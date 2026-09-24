@@ -22,6 +22,12 @@ export interface RawEvent {
   title?: string;
   /** "1920x1080" */
   screen?: string;
+  /**
+   * The page's own hostname, as the browser reported it. Client-reported, so
+   * it has exactly the trust of `url`: good for telling production from a
+   * staging copy that shares a site id, useless as proof of anything.
+   */
+  hostname?: string;
   lang?: string;
   /** Release/variant tag (`data-tag`). The browser-side handle for deploy correlation. */
   tag?: string;
@@ -50,6 +56,19 @@ export interface RequestContext {
    * that beats silently showing the wrong country.
    */
   country?: string;
+  /**
+   * Sub-country location, from the SAME proxy as `country` (see core/geo.ts,
+   * `geoFromHeaders`). Every field optional and usually absent: on Cloudflare
+   * it needs the "Add visitor location headers" managed transform. Coordinates
+   * are already rounded to 0.1° by the time they get here.
+   */
+  geo?: {
+    region?: string;
+    regionName?: string;
+    city?: string;
+    lat?: number | null;
+    lon?: number | null;
+  };
   /**
    * What the ORIGIN saw, when the caller is a server rather than a browser.
    *
@@ -82,6 +101,8 @@ export interface StoredEvent {
   path: string;
   query: string;
   title: string;
+  /** Hostname the page was served on ("" when unknown). See RawEvent.hostname. */
+  hostname: string;
   referrer: string;
   referrerHost: string;
   channel: Channel;
@@ -95,6 +116,19 @@ export interface StoredEvent {
   lang: string;
   /** ISO-3166 alpha-2; "" when no proxy header was present. */
   country: string;
+  /**
+   * ISO-3166-2 subdivision with country prefix ("US-TX"); "" when the proxy
+   * sent none. Optional on the type so code that builds events by hand (seeds,
+   * tests) does not have to know about it; the store writes "" for absent.
+   */
+  region?: string;
+  /** Subdivision name as the proxy spelled it; "" when absent. */
+  regionName?: string;
+  /** City name as the proxy spelled it; "" when absent. */
+  city?: string;
+  /** Rounded to 0.1° (city precision, deliberately); null when unknown — never 0. */
+  lat?: number | null;
+  lon?: number | null;
   /** Release/variant tag; "" when unset. */
   tag: string;
   /** HASH of the persistent identity ("" when identify was never called). The raw identity is never stored. */

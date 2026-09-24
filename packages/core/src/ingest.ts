@@ -71,7 +71,34 @@ export function splitUrl(raw: string, fallbackHost = "localhost"): { path: strin
   let path = u.pathname || "/";
   // Normalise the trailing slash: "/pricing/" and "/pricing" are the same page (except at the root).
   if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
+  // A hash-router route ("#/settings", sent only when the site opted in with
+  // data-hash="true") IS the page in such an app, so it is kept. Any other
+  // fragment is an in-page anchor and is dropped as before.
+  if (u.hash.startsWith("#/")) path += u.hash;
   return { path, query: u.search, host: u.hostname.toLowerCase().replace(/^www\./, "") };
+}
+
+/** The sub-country fields of an event, cleaned. Absent → "" / null, never 0. */
+function geoFields(ctx: RequestContext): Pick<StoredEvent, "region" | "regionName" | "city" | "lat" | "lon"> {
+  const g = ctx.geo;
+  const country = (ctx.country ?? "").toUpperCase().slice(0, 2);
+  if (!g || !country) return { region: "", regionName: "", city: "", lat: null, lon: null };
+  const region = typeof g.region === "string" && g.region.startsWith(`${country}-`) ? g.region.slice(0, 6) : "";
+  const num = (v: unknown, limit: number): number | null =>
+    typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= limit ? Math.round(v * 10) / 10 : null;
+  let lat = num(g.lat, 90);
+  let lon = num(g.lon, 180);
+  if (lat === null || lon === null) {
+    lat = null;
+    lon = null;
+  }
+  return {
+    region,
+    regionName: String(g.regionName ?? "").slice(0, 80),
+    city: String(g.city ?? "").slice(0, 80),
+    lat,
+    lon,
+  };
 }
 
 export class Ingestor {
@@ -152,6 +179,7 @@ export class Ingestor {
       path,
       query,
       title: raw.title ?? "",
+      hostname: raw.hostname ?? "",
       referrer: raw.referrer ?? "",
       referrerHost: ref.referrerHost,
       channel: ref.channel,
@@ -163,6 +191,9 @@ export class Ingestor {
       screen: raw.screen ?? "",
       lang: raw.lang ?? "",
       country: (ctx.country ?? "").toUpperCase().slice(0, 2),
+      // Sub-country location is only meaningful under the country it came
+      // with; without a country it is dropped rather than stored orphaned.
+      ...geoFields(ctx),
       tag: raw.tag ?? "",
       identity: identityId({ secret: this.opts.secret, siteId: raw.site, raw: raw.identity ?? "" }),
       botKind: bot.kind,

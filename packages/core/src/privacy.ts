@@ -118,6 +118,9 @@ export function applyToContext(ctx: RequestContext, policy: PrivacyPolicy): Requ
   if (policy.storeCountry) return ctx;
   const out = { ...ctx };
   delete out.country;
+  // City, subdivision and coordinates are finer than country; a policy that
+  // refuses country refuses them too.
+  delete out.geo;
   return out;
 }
 
@@ -127,6 +130,11 @@ export function applyToStored(event: StoredEvent, policy: PrivacyPolicy): Stored
   return {
     ...event,
     country: policy.storeCountry ? event.country : "",
+    region: policy.storeCountry ? event.region : "",
+    regionName: policy.storeCountry ? event.regionName : "",
+    city: policy.storeCountry ? event.city : "",
+    lat: policy.storeCountry ? event.lat : null,
+    lon: policy.storeCountry ? event.lon : null,
     screen: policy.storeScreen ? event.screen : "",
     identity: policy.allowIdentity ? event.identity : "",
   };

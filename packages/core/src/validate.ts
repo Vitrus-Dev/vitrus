@@ -87,9 +87,12 @@ export function validateEvent(body: unknown): ValidationResult {
   if (tag) event.tag = tag;
   const identity = str(b.identity, LIMITS.identity).trim();
   if (identity) event.identity = identity;
-  // `hostname` arrives from the client but is NOT TRUSTED: the server uses the
-  // host it observed itself. We still accept the field so the body is not
-  // rejected outright (forward compatibility).
+  // `hostname` arrives from the client and is stored as the client said it —
+  // the same trust as the url it came with. Anything that is not a plausible
+  // hostname is dropped rather than stored, so the hostnames table can never
+  // become a place to smuggle arbitrary text.
+  const hostname = str(b.hostname, 253).trim().toLowerCase();
+  if (hostname && /^[a-z0-9.-]{1,253}$/.test(hostname)) event.hostname = hostname.replace(/^www\./, "");
 
   return { ok: true, event };
 }

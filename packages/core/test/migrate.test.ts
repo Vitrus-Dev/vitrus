@@ -151,6 +151,22 @@ describe("a legacy events table", () => {
     await store.close();
   });
 
+  test("the location columns are added, and an old row's coordinates are NULL, not 0", async () => {
+    // (0, 0) is a real place. An old row's location is UNKNOWN, and the globe
+    // must not plot every pre-migration session in the Gulf of Guinea.
+    const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
+    legacyEvents(path);
+    const store = new SqliteStore(path);
+    await store.init();
+    const cols = (await store.select<{ name: string }>(`PRAGMA table_info(events)`)).map((c) => c.name);
+    for (const c of ["region", "region_name", "city", "lat", "lon"]) expect(cols).toContain(c);
+    const rows = await store.select<{ city: string; lat: number | null; lon: number | null }>(
+      `SELECT city, lat, lon FROM events WHERE id = 'e1'`
+    );
+    expect(rows[0]).toEqual({ city: "", lat: null, lon: null });
+    await store.close();
+  });
+
   test("a restart on the migrated database does not crash", async () => {
     const path = `/tmp/vitrus-events-${crypto.randomUUID().slice(0, 8)}.db`;
     legacyEvents(path);

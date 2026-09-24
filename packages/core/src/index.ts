@@ -30,7 +30,7 @@ export {
   type ReferrerVerdict,
 } from "./referrers.ts";
 export { parseUa, type UaVerdict } from "./ua.ts";
-export { countryFromHeaders, COUNTRY_HEADERS } from "./geo.ts";
+export { countryFromHeaders, COUNTRY_HEADERS, geoFromHeaders, roundCoord, EMPTY_GEO, GEO_PROVIDERS, type Geo, type GeoProvider } from "./geo.ts";
 export { COUNTRIES, countryName, countryPoint, type Country } from "./countries.ts";
 export { normalizeIp, ipv6Prefix64 } from "./ip.ts";
 export {
@@ -53,6 +53,10 @@ export {
   previousWindow,
   evidenceOf,
   bucketFor,
+  bucketForGranularity,
+  GRANULARITIES,
+  WindowError,
+  type Granularity,
   LIVE_WINDOW_MS,
   MAX_SERIES_POINTS,
   type MetricBundle,
@@ -84,17 +88,68 @@ export {
 export {
   FILTER_FIELDS,
   FILTER_LABELS,
+  FILTER_OPS,
+  OP_LABELS,
   FilterError,
   applyFilters,
   describeFilters,
   filterValues,
   isFilterField,
+  isPropField,
+  fieldLabel,
+  isFilterOp,
   parseFilters,
+  resolvePatternFilters,
   serializeFilters,
   windowCount,
   type Filter,
   type FilterField,
+  type FilterOp,
+  type PropField,
 } from "./metrics/filters.ts";
+export {
+  listSessions,
+  sessionTimeline,
+  listUsers,
+  userProfile,
+  eventDetail,
+  errorOccurrences,
+  computeJourneys,
+  computeGoal,
+  validateGoal,
+  pathPatternRegex,
+  filterSuggestions,
+  GoalError,
+  MAX_JOURNEY_STEPS,
+  MAX_JOURNEYS,
+  type Query,
+  type Scope,
+  type Select,
+  type SessionRow,
+  type SessionEvent,
+  type UserRow,
+  type UserProfile,
+  type EventDetail,
+  type JourneyResult,
+  type Goal,
+  type GoalResult,
+} from "./metrics/explore.ts";
+export {
+  buildGeoReport,
+  GEO_METRICS,
+  GEO_SESSION_LIMIT,
+  GEO_POINT_LIMIT,
+  type GeoReport,
+} from "./metrics/geo.ts";
+export {
+  computePerformance,
+  PerformanceError,
+  VITAL_KEYS,
+  PERCENTILES,
+  PERF_DIMENSIONS,
+  type PerformanceResult,
+  type VitalKey,
+} from "./metrics/performance.ts";
 export {
   computeFunnel,
   buildFunnelSql,
@@ -153,3 +208,39 @@ export {
   type LlmClient,
   type PhraseOutcome,
 } from "./insight/llm.ts";
+export {
+  REPLAY_DDL,
+  REPLAY_EVENT,
+  REPLAY_LIMITS,
+  REPLAY_BOUNDS,
+  DEFAULT_REPLAY_SETTINGS,
+  ReplayError,
+  migrateReplay,
+  getReplaySettings,
+  setReplaySettings,
+  replayConfig,
+  replayOptedOut,
+  sampledIn,
+  decodeChunk,
+  sanitizeChunk,
+  maskValue,
+  ingestReplayChunk,
+  purgeExpiredReplays,
+  listReplays,
+  loadReplay,
+  deleteReplay,
+  deleteAllReplays,
+  displayName,
+  type ReplaySettings,
+  type ReplayRequest,
+  type ReplayVerdict,
+  type ReplayHooks,
+  type ReplayIngestResult,
+  type ReplayChunkInput,
+  type ReplayListFilters,
+  type ReplayRow,
+  type ReplayMarker,
+  type ReplayPlayback,
+} from "./replay.ts";
+export { REPLAY_PLAYER_JS } from "./replay-player.ts";
+export { replayPublicRoute, replaySiteApi, type PublicReplayOptions, type SiteReplayOptions } from "./replay-http.ts";

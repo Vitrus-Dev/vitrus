@@ -11,7 +11,7 @@
 // manufactured explanation but the query that actually ran.
 
 import type { Store } from "../store/store.ts";
-import { applyFilters, filterValues, windowCount, type Filter } from "./filters.ts";
+import { applyFilters, filterValues, resolvePatternFilters, windowCount, type Filter } from "./filters.ts";
 import { HUMAN, HUMAN_STRICT, metricsFor, type MetricDef, type MetricUnit, type ParamContext } from "./queries.ts";
 
 export interface TimeWindow {
@@ -20,14 +20,20 @@ export interface TimeWindow {
   label: string;
 }
 
-export interface SeriesPoint {
+/**
+ * One bucket of a series. The main time series carries views · visitors ·
+ * sessions · events; other series metrics carry their own columns (every
+ * column the SQL returned, by name). A ratio column is `null` in a bucket with
+ * nothing to divide — never 0.
+ */
+export type SeriesPoint = {
   /** Start of the bucket (ms). */
   ts: number;
   views: number;
   visitors: number;
   sessions: number;
   events: number;
-}
+} & Record<string, number | null>;
 
 export interface Evidence {
   /** Short id for citation in prose: "e1", "e2"... */
@@ -44,6 +50,14 @@ export interface Evidence {
   rows: Record<string, unknown>[];
   /** Set when kind = "series" — with empty buckets already FILLED (see fillSeries). */
   series?: SeriesPoint[];
+  /**
+   * For a series with a comparison window: the same SQL over the previous
+   * period, bucket for bucket. Drawn as the "ghost" line. Point i here is the
+   * same offset into its window as point i of `series`.
+   */
+  previousSeries?: SeriesPoint[];
+  /** Bucket size of `series` in ms. */
+  bucketMs?: number;
   /** When a comparison window was given: the same SQL, different parameters. */
   previous?: number | null;
   previousParams?: unknown[];
@@ -57,6 +71,14 @@ export interface MetricBundle {
   vertical: "landing" | "shopify" | "generic";
   window: TimeWindow;
   compare: TimeWindow | null;
+  /** Bucket size every series in this bundle uses (ms). */
+  bucketMs: number;
+  /**
+   * The filters as they were applied — a regex filter carries the list of
+   * values it matched, so the dashboard can say "matched 12 pages" and the
+   * reader can check which.
+   */
+  filters: Filter[];
   generatedAt: number;
   evidence: Evidence[];
   /** The numbers allowed to appear in prose (the guard consumes this). */
@@ -85,18 +107,57 @@ export function bucketFor(w: TimeWindow): number {
   return 7 * 86_400_000; // beyond → weeks
 }
 
+/** Granularities a person may ask for. Month is not here: a month is not a fixed number of ms. */
+export const GRANULARITIES = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000,
+  week: 7 * 86_400_000,
+} as const;
+export type Granularity = keyof typeof GRANULARITIES;
+
+export class WindowError extends Error {}
+
+/**
+ * The bucket size for a window, honouring a requested granularity.
+ *
+ * A request that would draw more than MAX_SERIES_POINTS buckets is REFUSED
+ * with a reason, not silently coarsened: a chart labelled "by minute" that is
+ * actually hourly is a quiet lie about its own axis.
+ */
+export function bucketForGranularity(w: TimeWindow, g?: Granularity | null): number {
+  if (!g) return bucketFor(w);
+  const ms = GRANULARITIES[g];
+  if (!ms) throw new WindowError(`unknown granularity "${String(g)}"`);
+  const points = Math.ceil((w.to - w.from) / ms);
+  if (points > MAX_SERIES_POINTS) {
+    throw new WindowError(
+      `${points} ${g} buckets is more than a chart can show (max ${MAX_SERIES_POINTS}) — pick a coarser granularity or a shorter range`
+    );
+  }
+  return ms;
+}
+
 /** The "live" window: the last 5 minutes (industry standard). */
 export const LIVE_WINDOW_MS = 5 * 60_000;
 
-function contextFor(siteId: string, w: TimeWindow, now: number, filters: readonly Filter[]): ParamContext {
+function contextFor(
+  siteId: string,
+  w: TimeWindow,
+  now: number,
+  filters: readonly Filter[],
+  bucketMs: number,
+  tzOffsetMs: number
+): ParamContext {
   return {
     siteId,
     from: w.from,
     to: w.to,
-    bucketMs: bucketFor(w),
+    bucketMs,
     liveFrom: now - LIVE_WINDOW_MS,
     now,
-    filterValues: filterValues(filters),
+    tzOffsetMs,
+    filterValues: filterValues(filters, siteId),
   };
 }
 
@@ -115,16 +176,18 @@ function paramsFor(
   w: TimeWindow,
   now: number,
   filters: readonly Filter[],
-  filteredSql: string
+  filteredSql: string,
+  bucketMs: number,
+  tzOffsetMs: number
 ): unknown[] {
   const slots = (filteredSql.match(/\?/g) ?? []).length;
-  const values = filterValues(filters);
+  const values = filterValues(filters, siteId);
 
   // Custom builder: time-series and live metrics need inputs other than the
   // window triple. They append the filter values themselves, because only they
   // know where their own placeholders sit.
   if (def.params) {
-    const out = def.params(contextFor(siteId, w, now, filters));
+    const out = def.params(contextFor(siteId, w, now, filters, bucketMs, tzOffsetMs));
     if (out.length !== slots) {
       throw new Error(`metric ${def.id}: ${slots} placeholders but ${out.length} parameters produced`);
     }
@@ -169,11 +232,22 @@ export async function buildBundle(
      * visible in the evidence panel, so the number and the query still agree.
      */
     strictBots?: boolean;
+    /** Requested chart granularity; default picks one from the window length. */
+    granularity?: Granularity | null;
+    /** The viewer's UTC offset in minutes (local = UTC + offset). Default 0. */
+    tzOffsetMinutes?: number;
+    /** Compute only these metric ids (all when omitted). */
+    only?: readonly string[];
   }
 ): Promise<MetricBundle> {
   const vertical = opts.vertical ?? "generic";
-  const filters = opts.filters ?? [];
-  const defs = metricsFor(vertical);
+  // Regex filters are expanded to the values they match BEFORE any SQL is
+  // built, so every metric in the bundle binds the same list.
+  const filters = await resolvePatternFilters((sql, p) => store.select(sql, p), opts.siteId, opts.filters ?? []);
+  const bucketMs = bucketForGranularity(opts.window, opts.granularity ?? null);
+  const tzOffsetMs = Math.round(Math.max(-14 * 60, Math.min(14 * 60, opts.tzOffsetMinutes ?? 0))) * 60_000;
+  const only = opts.only ? new Set(opts.only) : null;
+  const defs = metricsFor(vertical).filter((d) => !only || only.has(d.id));
   const compare = opts.compare ?? null;
   const evidence: Evidence[] = [];
 
@@ -188,7 +262,7 @@ export async function buildBundle(
     // click on is the query that produced the number they are looking at.
     const base = opts.strictBots ? def.sql.split(HUMAN).join(HUMAN_STRICT) : def.sql;
     const sql = applyFilters(base, filters);
-    const params = paramsFor(def, opts.siteId, opts.window, now, filters, sql);
+    const params = paramsFor(def, opts.siteId, opts.window, now, filters, sql, bucketMs, tzOffsetMs);
     const rows = await store.select<Record<string, unknown>>(sql, params);
 
     const e: Evidence = {
@@ -204,11 +278,22 @@ export async function buildBundle(
     };
 
     if (def.kind === "series") {
-      e.series = fillSeries(rows, opts.window);
+      e.series = fillSeries(rows, opts.window, bucketMs, def.seriesColumns);
+      e.bucketMs = bucketMs;
+      if (compare) {
+        const prevParams = paramsFor(def, opts.siteId, compare, now, filters, sql, bucketMs, tzOffsetMs);
+        e.previousParams = prevParams;
+        e.previousSeries = fillSeries(
+          await store.select<Record<string, unknown>>(sql, prevParams),
+          compare,
+          bucketMs,
+          def.seriesColumns
+        );
+      }
     }
 
     if (compare && def.kind === "scalar" && !def.noCompare) {
-      const prevParams = paramsFor(def, opts.siteId, compare, now, filters, sql);
+      const prevParams = paramsFor(def, opts.siteId, compare, now, filters, sql, bucketMs, tzOffsetMs);
       const prevRows = await store.select<Record<string, unknown>>(sql, prevParams);
       const prev = numberOf(prevRows[0]);
       e.previousParams = prevParams;
@@ -230,6 +315,8 @@ export async function buildBundle(
     vertical,
     window: opts.window,
     compare,
+    bucketMs,
+    filters,
     generatedAt: opts.now ?? Date.now(),
     evidence,
     allowedNumbers: collectAllowed(evidence, opts.window, compare),
@@ -253,24 +340,38 @@ function round(v: number, digits: number): number {
  */
 export const MAX_SERIES_POINTS = 400;
 
-function fillSeries(rows: Record<string, unknown>[], w: TimeWindow): SeriesPoint[] {
-  const bucketMs = bucketFor(w);
+/**
+ * Columns that are ratios or averages. An empty bucket has none of these —
+ * there is nothing to divide — so it is filled with null, not 0.
+ */
+const RATIO_COLUMNS = new Set(["bounce_rate", "duration", "pages_per_session"]);
+
+function fillSeries(
+  rows: Record<string, unknown>[],
+  w: TimeWindow,
+  bucketMs: number,
+  shape: readonly string[] = ["views", "visitors", "sessions", "events"]
+): SeriesPoint[] {
   const count = Math.min(MAX_SERIES_POINTS, Math.max(1, Math.ceil((w.to - w.from) / bucketMs)));
   const byBucket = new Map<number, Record<string, unknown>>();
+  const columns = new Set<string>(shape);
   for (const r of rows) {
     const b = Number(r.bucket);
     if (Number.isFinite(b)) byBucket.set(b, r);
+    for (const k of Object.keys(r)) if (k !== "bucket") columns.add(k);
   }
+  // `shape` gives every bucket its columns even when the SQL returned no rows
+  // at all — an empty week is flat lines at zero, not a missing chart.
   const out: SeriesPoint[] = [];
   for (let i = 0; i < count; i++) {
     const r = byBucket.get(i);
-    out.push({
-      ts: w.from + i * bucketMs,
-      views: Number(r?.views ?? 0),
-      visitors: Number(r?.visitors ?? 0),
-      sessions: Number(r?.sessions ?? 0),
-      events: Number(r?.events ?? 0),
-    });
+    const p: Record<string, number | null> = { ts: w.from + i * bucketMs };
+    for (const k of columns) {
+      const v = r?.[k];
+      if (v === null || v === undefined) p[k] = RATIO_COLUMNS.has(k) ? null : 0;
+      else p[k] = Number(v);
+    }
+    out.push(p as SeriesPoint);
   }
   return out;
 }
@@ -297,11 +398,8 @@ function collectAllowed(evidence: Evidence[], w: TimeWindow, compare: TimeWindow
     // Series points are evidence too: a sentence like "106 visits on 12 Nov"
     // has to be able to pass the guard. The timestamp itself is not added — that
     // is a date, not a measurement.
-    for (const p of e.series ?? []) {
-      add(p.views);
-      add(p.visitors);
-      add(p.sessions);
-      add(p.events);
+    for (const p of [...(e.series ?? []), ...(e.previousSeries ?? [])]) {
+      for (const [k, v] of Object.entries(p)) if (k !== "ts") add(v);
     }
   }
 
