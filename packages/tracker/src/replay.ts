@@ -4,7 +4,7 @@
 // a site without replay never downloads a byte of it.
 //
 // Written by hand rather than with rrweb: rrweb is ~40 KB gzipped and a runtime
-// dependency (see CLAUDE.md, "zero runtime dependencies"). What we need is a
+// dependency (the project rule is zero runtime dependencies). What we need is a
 // DOM snapshot, a MutationObserver and a handful of listeners; the format below
 // is ours and the player that reads it lives in core/replay-player.ts.
 //

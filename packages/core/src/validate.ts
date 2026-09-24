@@ -68,6 +68,8 @@ export function validateEvent(body: unknown): ValidationResult {
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(props, "revenue")) normalizeRevenue(props);
+
   const event: RawEvent = {
     site,
     type,
@@ -95,4 +97,42 @@ export function validateEvent(body: unknown): ValidationResult {
   if (hostname && /^[a-z0-9.-]{1,253}$/.test(hostname)) event.hostname = hostname.replace(/^www\./, "");
 
   return { ok: true, event };
+}
+
+/** Largest single amount accepted. Above it is almost certainly a unit mistake (cents sent as units). */
+export const REVENUE_MAX = 1_000_000_000;
+
+/**
+ * `revenue` + `currency` on an event (see metrics/revenue.ts), normalised once
+ * at the door so every query can trust the shape: `revenue` a finite number
+ * ≥ 0 rounded to 4 places, `currency` an upper-case ISO 4217 code.
+ *
+ * An invalid amount does NOT reject the event — the event happened; only its
+ * amount is unusable. The amount is removed and the reason is kept in
+ * `_revenue_rejected`, so the revenue page can say "12 purchases carried an
+ * amount we could not accept, because …" instead of quietly reporting less.
+ *
+ * No currency conversion, here or anywhere: an exchange rate is a number from
+ * somewhere else, and summing EUR into USD would put an unprovable figure in
+ * the total.
+ */
+function normalizeRevenue(props: Record<string, string | number | boolean | null>): void {
+  const raw = props.revenue;
+  let amount = NaN;
+  if (typeof raw === "number") amount = raw;
+  else if (typeof raw === "string" && /^\s*\d+(\.\d+)?\s*$/.test(raw)) amount = Number(raw);
+  const currency = String(props.currency ?? "").trim().toUpperCase();
+  let reason = "";
+  if (!Number.isFinite(amount)) reason = "amount_not_a_number";
+  else if (amount < 0) reason = "amount_negative";
+  else if (amount > REVENUE_MAX) reason = "amount_too_large";
+  else if (!currency) reason = "currency_missing";
+  else if (!/^[A-Z]{3}$/.test(currency)) reason = "currency_invalid";
+  if (reason) {
+    delete props.revenue;
+    props._revenue_rejected = reason;
+    return;
+  }
+  props.revenue = Math.round(amount * 10_000) / 10_000;
+  props.currency = currency;
 }

@@ -151,6 +151,21 @@ export {
   type VitalKey,
 } from "./metrics/performance.ts";
 export {
+  computeRevenue,
+  RevenueError,
+  REVENUE_DIMENSIONS,
+  type RevenueResult,
+} from "./metrics/revenue.ts";
+export { REVENUE_MAX } from "./validate.ts";
+export {
+  importUmamiCsv,
+  removeImport,
+  parseCsv,
+  ImportError,
+  IMPORT_MAX_ROWS,
+  type ImportSummary,
+} from "./import-umami.ts";
+export {
   computeFunnel,
   buildFunnelSql,
   validateSteps,
