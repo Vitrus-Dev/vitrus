@@ -49,7 +49,10 @@ declare global {
   if (!site) return;
   const endpoint =
     script.getAttribute("data-host") || new URL(script.src, location.href).origin;
-  const collect = endpoint.replace(/\/$/, "") + "/api/collect";
+  // `/api/d`, not `/api/collect`: blocklists match the latter as a path on any
+  // domain, so even a first-party install lost every visitor running one. The
+  // server accepts both; see the ingest route.
+  const collect = endpoint.replace(/\/$/, "") + "/api/d";
   const autoTrack = script.getAttribute("data-auto") !== "false";
   // The tag: a release/variant marker ("v2", "experiment-b"). The browser-side
   // handle for deploy correlation — the same idea as Umami's `data-tag`.
@@ -107,7 +110,7 @@ declare global {
   if (script.hasAttribute("data-replay")) {
     const r = doc.createElement("script");
     for (const a of Array.from(script.attributes)) r.setAttribute(a.name, a.value);
-    r.src = collect.slice(0, -12) + "/r.js";
+    r.src = endpoint.replace(/\/$/, "") + "/r.js";
     doc.head.appendChild(r);
   }
 

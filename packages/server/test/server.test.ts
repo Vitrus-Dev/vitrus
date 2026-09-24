@@ -23,6 +23,13 @@ function collect(body: unknown, headers: Record<string, string> = {}) {
 }
 
 describe("clientIp", () => {
+  test("x-vitrus-client-ip wins: behind a customer's proxy, cf-connecting-ip is the proxy", () => {
+    const req = new Request("http://x/", {
+      headers: { "x-vitrus-client-ip": "198.51.100.9", "cf-connecting-ip": "203.0.113.7" },
+    });
+    expect(clientIp(req)).toBe("198.51.100.9");
+  });
+
   test("prefers cf-connecting-ip: behind Cloudflare -> Caddy, x-forwarded-for is the edge", () => {
     const req = new Request("http://x/", {
       headers: { "cf-connecting-ip": "203.0.113.7", "x-forwarded-for": "172.70.1.1" },
@@ -52,6 +59,18 @@ describe("the HTTP surface", () => {
     const res = await handle(collect({ site: "demo", type: "pageview", url: "/fiyat" }));
     expect(res.status).toBe(204);
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    const rows = await store.select<{ n: number }>(`SELECT COUNT(*) AS n FROM events`);
+    expect(rows[0]?.n).toBe(1);
+  });
+
+  test("/api/d is the same ingest as /api/collect (blocklists match the long name)", async () => {
+    const { store, handle } = await harness();
+    const req = new Request("http://localhost/api/d", {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": CHROME },
+      body: JSON.stringify({ site: "demo", type: "pageview", url: "/" }),
+    });
+    expect((await handle(req)).status).toBeLessThan(300);
     const rows = await store.select<{ n: number }>(`SELECT COUNT(*) AS n FROM events`);
     expect(rows[0]?.n).toBe(1);
   });

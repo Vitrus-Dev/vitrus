@@ -42,7 +42,13 @@ function json(data: unknown, status = 200, extra: Record<string, string> = {}): 
 }
 
 function clientIp(req: Request): string {
-  // Cloudflare's header first. Behind Cloudflare -> Caddy, x-forwarded-for is
+  // A proxy on the customer's own domain (docs/proxy) names the visitor
+  // explicitly. It has to: behind it, cf-connecting-ip is the PROXY's address
+  // and every visitor would hash to one. Spoofable, like x-forwarded-for — an
+  // IP here only feeds a daily-salted visitor hash, never an access decision.
+  const explicit = req.headers.get("x-vitrus-client-ip")?.trim();
+  if (explicit) return explicit;
+  // Then Cloudflare's header. Behind Cloudflare -> Caddy, x-forwarded-for is
   // rewritten by Caddy to the address that connected to IT — a Cloudflare edge
   // that changes from request to request — so one page visit was hashed into
   // up to three visitors (pageview, click, web vitals), each its own session.

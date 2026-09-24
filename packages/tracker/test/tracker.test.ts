@@ -63,7 +63,7 @@ describe("tracker", () => {
   test("sends exactly one pageview on load", async () => {
     await loadTracker();
     expect(sent).toHaveLength(1);
-    expect(sent[0]?.url).toBe("http://localhost:3000/api/collect");
+    expect(sent[0]?.url).toBe("http://localhost:3000/api/d");
     expect(sent[0]?.body).toMatchObject({ site: "demo", type: "pageview", url: "/" });
   });
 

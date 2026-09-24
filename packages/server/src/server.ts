@@ -44,9 +44,15 @@ function json(data: unknown, status = 200, extra: Record<string, string> = {}): 
   return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extra } });
 }
 
-/** The real client IP: Cloudflare's cf-connecting-ip, else the FIRST value of x-forwarded-for. */
+/** The real client IP: x-vitrus-client-ip (set by a documented proxy), cf-connecting-ip, else the FIRST value of x-forwarded-for. */
 export function clientIp(req: Request, fallback = "0.0.0.0"): string {
-  // Cloudflare's header first. Behind Cloudflare -> Caddy, x-forwarded-for is
+  // A proxy on the customer's own domain (docs/proxy) names the visitor
+  // explicitly. It has to: behind it, cf-connecting-ip is the PROXY's address
+  // and every visitor would hash to one. Spoofable, like x-forwarded-for — an
+  // IP here only feeds a daily-salted visitor hash, never an access decision.
+  const explicit = req.headers.get("x-vitrus-client-ip")?.trim();
+  if (explicit) return explicit;
+  // Then Cloudflare's header. Behind Cloudflare -> Caddy, x-forwarded-for is
   // rewritten by Caddy to the address that connected to IT — a Cloudflare edge
   // that changes from request to request — so one page visit was hashed into
   // up to three visitors (pageview, click, web vitals), each its own session.
@@ -107,7 +113,11 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
     }
 
     // — Ingest —
-    if (path === "/api/collect" && req.method === "POST") {
+    // `/api/d` is what the tracker posts to; `/api/collect` stays for tags and
+    // integrations already in the wild. The short name exists because ad
+    // blockers match `/api/collect` as a path on ANY domain — first-party
+    // included — and a visitor silently goes uncounted (seen on vitrus.dev).
+    if ((path === "/api/d" || path === "/api/collect") && req.method === "POST") {
       let body: unknown;
       try {
         body = await req.json();
