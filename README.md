@@ -29,6 +29,11 @@
 
 ---
 
+**What it is, in one paragraph.** Vitrus tells you how many people visit your website, where they come
+from, what they do and where they leave. It sets no cookies, so you do not need a consent banner. You
+can use the hosted version at [vitrus.dev](https://vitrus.dev) or run it yourself as a single program
+— there is no database server to install.
+
 Every analytics tool shows you numbers. Vitrus shows you **where each one came from**. Click any
 figure and you get the query that ran, the parameters it ran with, and the raw rows — not a
 description of the number, the number's origin.
@@ -132,12 +137,12 @@ to download, and without a proxy the dashboard says the data is missing rather t
 ## How it compares
 
 The open-source alternatives are good, and several do things we do not. This table lists only
-differences we can state without qualification. *Checked 16 September 2026 — if a cell is out of
-date, please [open an issue](https://github.com/Vitrus-Dev/vitrus/issues/new).*
+differences we can state without qualification. *Checked 24 September 2026 against each product's own
+documentation — if a cell is out of date, please [open an issue](https://github.com/Vitrus-Dev/vitrus/issues/new).*
 
 | | GA4 | Plausible | Umami | Rybbit | **Vitrus** |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Open source | ✗ | ✓ | ✓ | ✓ | **✓** |
+| Open source | ✗ | ✓ AGPL-3.0 | ✓ MIT | ✓ AGPL-3.0 | **✓ Apache-2.0** |
 | Cookie-free, no consent banner | ✗ | ✓ | ✓ | ✓ | **✓** |
 | Services to install | — | Postgres + ClickHouse | Postgres or MySQL | Postgres + ClickHouse | **none** |
 | Tracker size (gzipped) | ~28 KB | ~1 KB | ~2 KB | ~18 KB | **2.6 KB** |
@@ -147,16 +152,37 @@ date, please [open an issue](https://github.com/Vitrus-Dev/vitrus/issues/new).*
 | **AI sentences dropped when the number is unprovable** | ✗ | ✗ | ✗ | ✗ | **✓** |
 | Verified agent identity (Web Bot Auth) | ✗ | ✗ | ✗ | ✗ | **✓** |
 | Bot detection beyond the user-agent, in the open-source build | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Funnels, journeys and goals | ✓ | ✓ (funnels on paid plans) | ✓ | ✓ | **✓** |
 | Session replay | ✗ | ✗ | ✓ | ✓ | opt-in, masked by default |
+| Public API with keys | ✓ | ✓ | ✓ | ✓ | not yet (read-only MCP today) |
 | City-level geography | ✓ | ✓ | ✓ | ✓ | from proxy headers |
 | Hundreds of millions of events a month | ✓ | ✓ | ✓ | ✓ | ~1M/month per box |
 
-**When to pick something else.** If you need a mature replay product, autocapture of every button
-click, API keys or imports from other tools today, Rybbit and Umami are further along. If your reporting is tied to Google or Meta ad spend, GA4 closes that
-loop and we never will. If you need cities without a proxy in front, everyone else bundles a GeoIP
-database and we deliberately do not. And if you ingest hundreds of millions of events a month, take a
-ClickHouse-backed tool: our embedded database is what makes the zero-service install possible, and it
-is also its ceiling.
+### Where Vitrus is ahead
+
+- **You can check every number.** Click it and you get the query, its parameters and the rows. No other
+  tool in this table does that.
+- **AI summaries cannot make numbers up.** A sentence whose number is not in the evidence is removed.
+- **AI traffic, told apart properly.** Visitors that ChatGPT or Perplexity sent you are one thing; the AI
+  crawlers reading your pages are another; agents that sign their requests are verified and named.
+- **Nothing to operate.** One process and an embedded database. The others need a database server —
+  Postgres or MySQL, and for two of them ClickHouse as well.
+- **The privacy default is the strict one.** The visitor id is re-salted every day, always.
+
+### Where others are ahead
+
+- **Revenue tracking** — Plausible, Umami and GA4. **Heatmaps** — Umami. We have neither.
+- **Importing your history** from another tool — Plausible and Rybbit do it; we do not yet.
+- **Google Search Console** — Plausible and Rybbit connect it; we do not yet.
+- **A public API with keys** — everyone else has one; we offer a read-only MCP server for now.
+- **Maturity and scale.** Replay, autocapture of every button click and hundreds of millions of events
+  a month are all further along in Rybbit and Umami, which run on ClickHouse or Postgres. Our embedded
+  database is what makes the zero-service install possible, and it is also its ceiling (about a million
+  events a month per box).
+- **Ad attribution.** If your reporting is tied to Google or Meta ad spend, GA4 closes that loop and we
+  never will.
+- **Cities without a proxy.** Everyone else bundles a GeoIP database; we read city and region from
+  Cloudflare, Vercel or CloudFront headers, and show only the country otherwise.
 
 One-page write-ups per tool: **[vitrus.dev/compare](https://vitrus.dev/compare)**.
 
