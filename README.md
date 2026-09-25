@@ -173,7 +173,6 @@ documentation — if a cell is out of date, please [open an issue](https://githu
 
 - **Heatmaps** — Umami has them; we do not.
 - **Importing your history** — we import from Umami only; Plausible imports Google Analytics history, and Rybbit imports Plausible exports too.
-- **Google Search Console** — Plausible and Rybbit connect it; we do not yet.
 - **Maturity and scale.** Replay, autocapture of every button click and hundreds of millions of events
   a month are all further along in Rybbit and Umami, which run on ClickHouse or Postgres. Our embedded
   database is what makes the zero-service install possible, and it is also its ceiling (about a million
