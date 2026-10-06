@@ -219,3 +219,24 @@ describe("the self-hosted dashboard shows the whole engine", () => {
     expect(html).toContain("escapeHtml(String(r[c]");
   });
 });
+
+describe("VITRUS_PASSWORD", () => {
+  test("dashboard and read API need the password; tracker and ingest stay public", async () => {
+    const { SqliteStore } = await import("@vitrus/core");
+    const { createHandler } = await import("../src/server.ts");
+    const store = new SqliteStore(":memory:");
+    await store.init();
+    await store.upsertSite({ id: "s1", name: "S", domain: "s.example", vertical: "landing", createdAt: Date.now() });
+    const h = createHandler({ store, secret: "x", password: "hunter2-long" });
+    expect((await h(new Request("http://l/"))).status).toBe(401);
+    expect((await h(new Request("http://l/api/stats?site=s1"))).status).toBe(401);
+    expect((await h(new Request("http://l/api/replay/settings?site=s1", { method: "PUT", body: "{}" }))).status).toBe(401);
+    const wrong = { authorization: "Basic " + btoa("admin:nope") };
+    expect((await h(new Request("http://l/api/sites", { headers: wrong }))).status).toBe(401);
+    const right = { authorization: "Basic " + btoa("anyone:hunter2-long") };
+    expect((await h(new Request("http://l/api/sites", { headers: right }))).status).toBe(200);
+    const ingest = await h(new Request("http://l/api/d", { method: "POST", headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 Chrome/131.0" }, body: JSON.stringify({ site: "s1", type: "pageview", url: "/" }) }));
+    expect(ingest.status).toBe(204);
+    expect((await h(new Request("http://l/health"))).status).toBe(200);
+  });
+});

@@ -1,42 +1,66 @@
-<div align="center">
-  <img src=".github/assets/logo.svg" alt="Vitrus" width="84" height="84">
-  <h1>Vitrus</h1>
-  <p><b>Analytics that shows its work.</b></p>
-  <p>Open-source, cookie-free web analytics. Every number carries the SQL that produced it —<br>
-  and an AI summary can't ship a number it can't prove.</p>
-  <p>
-    <a href="https://vitrus.dev">Website</a> ·
-    <a href="https://vitrus.dev/docs">Docs</a> ·
-    <a href="https://vitrus.dev/features">Features</a> ·
-    <a href="https://vitrus.dev/compare">Compare</a> ·
-    <a href="https://vitrus.dev/changelog">Changelog</a> ·
-    <a href="https://app.vitrus.dev">Cloud</a> ·
-    <a href="https://github.com/Vitrus-Dev/vitrus/discussions">Discussions</a>
-  </p>
-  <p>
-    <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-    <img alt="Runtime dependencies: 0" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
-    <img alt="Tracker: 2.6 KB gzipped" src="https://img.shields.io/badge/tracker-2.6%20KB%20gzip-brightgreen">
-    <img alt="Services to install: 0" src="https://img.shields.io/badge/services%20to%20install-0-brightgreen">
-    <a href="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml/badge.svg"></a>
-    <a href="https://github.com/Vitrus-Dev/vitrus/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Vitrus-Dev/vitrus"></a>
-  </p>
-</div>
-
 <p align="center">
-  <img src=".github/assets/dashboard-preview.svg" alt="Illustration of the hosted Vitrus dashboard: a KPI strip, a trend chart, and the SQL evidence panel open beside a channel breakdown" width="880">
+  <a href="https://vitrus.dev"><img src=".github/assets/banner.png" alt="Vitrus — analytics that shows its work" width="100%"></a>
 </p>
 
----
+<p align="center">
+  Open-source, cookie-free web analytics. Every number carries the SQL that produced it —<br>
+  and an AI summary can't ship a number it can't prove. One process, on your own server.
+</p>
 
-**What it is, in one paragraph.** Vitrus tells you how many people visit your website, where they come
-from, what they do and where they leave. It sets no cookies, so you do not need a consent banner. You
-can use the hosted version at [vitrus.dev](https://vitrus.dev) or run it yourself as a single program
-— there is no database server to install.
+<p align="center">
+  <a href="https://vitrus.dev"><b>Website</b></a> ·
+  <a href="https://app.vitrus.dev"><b>Cloud</b></a> ·
+  <a href="https://vitrus.dev/docs"><b>Documentation</b></a> ·
+  <a href="#quickstart"><b>Quickstart</b></a> ·
+  <a href="https://vitrus.dev/compare">Compare</a> ·
+  <a href="https://vitrus.dev/changelog">Changelog</a> ·
+  <a href="https://github.com/Vitrus-Dev/vitrus/discussions">Discussions</a>
+</p>
 
-Every analytics tool shows you numbers. Vitrus shows you **where each one came from**. Click any
-figure and you get the query that ran, the parameters it ran with, and the raw rows — not a
-description of the number, the number's origin.
+<p align="center">
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-5bc8af"></a>
+  <img alt="Runtime dependencies: 0" src="https://img.shields.io/badge/runtime%20deps-0-5bc8af">
+  <img alt="Tracker: 2.6 KB gzipped" src="https://img.shields.io/badge/tracker-2.6%20KB%20gzip-5bc8af">
+  <img alt="Services to install: 0" src="https://img.shields.io/badge/services%20to%20install-0-5bc8af">
+  <a href="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/Vitrus-Dev/vitrus/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Vitrus-Dev/vitrus?color=5bc8af"></a>
+</p>
+
+<p align="center">
+  <img src=".github/assets/hero-split.png" alt="The Vitrus dashboard in light and dark, on a demo workspace with sample data: KPIs with evidence badges, a trend against the previous period, and the deterministic digest" width="100%">
+</p>
+
+## Quickstart
+
+You need [Bun](https://bun.sh) 1.3 or newer. That is the whole list.
+
+```bash
+git clone https://github.com/Vitrus-Dev/vitrus && cd vitrus
+bun install && bun run build:tracker
+alias vitrus="bun $PWD/packages/cli/src/cli.ts"
+
+vitrus init                                   # creates ./vitrus.db and a secret salt
+vitrus site add "My site" example.com         # prints your script tag
+VITRUS_PASSWORD="a long secret" vitrus start  # ingest + dashboard on http://localhost:3000
+```
+
+Then one line in your site's `<head>`:
+
+```html
+<script defer data-site="SITE_ID" src="https://YOUR-HOST/v.js"></script>
+```
+
+No Docker Compose file, no database server, no migration step. Rather not run it? **[app.vitrus.dev](https://app.vitrus.dev)**
+is the same engine, hosted, with a free plan.
+
+## Every number opens the query that made it
+
+Click a figure and you get the SQL that ran, its parameters, the window and the result — not a
+description of the number, the number's origin. It is the same evidence the AI summary is checked against.
+
+<p align="center">
+  <img src=".github/assets/shot-main-evidence.webp" alt="The unique-visitors figure opened in the evidence panel: the SQL query, its parameters, the result and the time window (demo workspace, sample data)" width="100%">
+</p>
 
 That matters more now that models write the reports. When an AI-written sentence contains a number
 that is not in the evidence, Vitrus **drops the sentence** before it reaches you:
@@ -48,14 +72,36 @@ The drop coincides with the last deploy. [e1, e7]
    → 41.7 is in no evidence record, and "caused" is a claim nobody can make from this data.
 ```
 
-## Get started
+## A whole analytics product
 
-| | |
-|---|---|
-| **[Self-host](#self-host-in-a-minute)** | One process, an embedded database, nothing else to run. Free forever. |
-| **[Cloud](https://app.vitrus.dev)** | The same engine, hosted — teams, quotas and digest delivery handled for you. |
+<table>
+  <tr>
+    <td width="50%"><img src=".github/assets/tile-globe.webp" alt="The 3D globe with sessions at their cities"><br><b>Globe.</b> Sessions at their city, on a canvas drawn from our own geometry — no map provider, no GeoIP database.</td>
+    <td width="50%"><img src=".github/assets/tile-realtime.webp" alt="Real-time visitors and the live event feed"><br><b>Real-time.</b> Who is on the site now, and the latest events, streamed as they arrive.</td>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/tile-ai.webp" alt="AI assistant referrals separated from AI crawler reads"><br><b>AI traffic.</b> Visitors ChatGPT and Claude sent you, kept apart from the crawlers that read your pages.</td>
+    <td><img src=".github/assets/tile-funnel.webp" alt="An ordered funnel with drop-off"><br><b>Funnels.</b> Ordered — a step counts only after the one before it, so the conversion is not inflated.</td>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/tile-journeys.webp" alt="A Sankey of page journeys"><br><b>Journeys.</b> The paths people take, as a Sankey you can filter by start and end.</td>
+    <td><img src=".github/assets/tile-revenue.webp" alt="Revenue by channel"><br><b>Revenue.</b> Per currency, never converted, attributed to where the visit began.</td>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/tile-performance.webp" alt="Core Web Vitals at p75"><br><b>Web Vitals.</b> LCP, INP, CLS, FCP and TTFB at the percentile you choose, per page.</td>
+    <td><img src=".github/assets/tile-retention.webp" alt="A retention cohort matrix"><br><b>Retention.</b> Cohorts of identified users — and an honest blank for days that have not happened yet.</td>
+  </tr>
+</table>
 
-Documentation: **[vitrus.dev/docs](https://vitrus.dev/docs)**.
+<sub>Screenshots: the hosted dashboard on a demo workspace; every figure is sample data. The self-hosted
+dashboard in this repository is simpler today — see <a href="#architecture">Architecture</a> for exactly which views it renders.</sub>
+
+## What it is, in one paragraph
+
+Vitrus tells you how many people visit your website, where they come from, what they do and where
+they leave. It sets no cookies, so you do not need a consent banner. Use the hosted version at
+[vitrus.dev](https://vitrus.dev) or run it yourself as a single program — there is no database
+server to install.
 
 ## Features
 
@@ -99,28 +145,14 @@ Documentation: **[vitrus.dev/docs](https://vitrus.dev/docs)**.
 Deliberately absent: ad-platform attribution (ROAS/CPA) and multi-touch attribution models, because
 a model's opinion is not something we can prove.
 
-## Self-host in a minute
+## Self-hosting, in more detail
 
-You need [Bun](https://bun.sh) 1.3 or newer. That is the whole list.
+The [Quickstart](#quickstart) is the whole install. **Set `VITRUS_PASSWORD` before the port is reachable
+from outside:** the dashboard and the read API then ask for it (HTTP Basic, any user name), while the
+tracker and ingest stay public because your visitors' browsers call them. Without it, `vitrus start`
+prints a warning and anyone who can reach the port can read your analytics.
 
-```bash
-git clone https://github.com/Vitrus-Dev/vitrus && cd vitrus
-bun install && bun run build:tracker
-
-alias vitrus="bun $PWD/packages/cli/src/cli.ts"
-vitrus init                              # creates ./vitrus.db and a secret salt
-vitrus site add "My site" example.com    # prints your script tag
-vitrus start                             # ingest + dashboard on http://localhost:3000
-```
-
-Add the tag it printed to your site's `<head>`:
-
-```html
-<script defer data-site="SITE_ID" src="https://YOUR-HOST/v.js"></script>
-```
-
-No Docker Compose file, no second service, no migration step. Want data on screen straight away?
-`vitrus demo <site-id>` generates a realistic week of sample traffic.
+Want data on screen straight away? `vitrus demo <site-id>` generates a realistic week of sample traffic.
 
 ```bash
 vitrus site ls                                        # list your sites

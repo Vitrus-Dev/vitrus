@@ -22,7 +22,7 @@ import {
   type LlmClient,
   type Site,
 } from "@vitrus/core";
-import { startServer } from "@vitrus/server";
+import { OPEN_DASHBOARD_WARNING, startServer } from "@vitrus/server";
 
 const DB = process.env.VITRUS_DB ?? "./vitrus.db";
 
@@ -78,7 +78,7 @@ const HELP = `vitrus — provable analytics
   vitrus digest <site-id> [--days 7]   build a summary  [--llm ollama:<model>] [--json]
   vitrus demo <site-id> [--days 7]     generate sample traffic (development only)
 
-Environment: VITRUS_DB (default ./vitrus.db)`;
+Environment: VITRUS_DB (default ./vitrus.db) · VITRUS_PASSWORD (dashboard password — set it before exposing the port)`;
 
 async function main(argv: string[]): Promise<void> {
   const [cmd, ...args] = argv;
@@ -129,9 +129,11 @@ async function main(argv: string[]): Promise<void> {
     const store = await open();
     const secret = await secretOf(store);
     const port = Number(flag(args, "port", process.env.PORT ?? "3000"));
-    const server = await startServer({ store, secret, port });
+    const password = process.env.VITRUS_PASSWORD || undefined;
+    const server = await startServer({ store, secret, port, password });
     console.log(`vitrus → http://localhost:${server.port}   (db: ${DB})`);
     console.log("The dashboard is up; add the script tag to your site and data will start arriving.");
+    if (!password) console.warn(OPEN_DASHBOARD_WARNING);
     return; // the process stays alive
   }
 

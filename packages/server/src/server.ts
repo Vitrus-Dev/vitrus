@@ -30,6 +30,36 @@ export interface ServerOptions {
   port?: number;
   /** Path to the tracker script on disk (the build output). */
   trackerPath?: string;
+  /**
+   * Password for the dashboard and the read API (HTTP Basic, any user name).
+   * The tracker, ingest and the replay recorder stay public — they have to,
+   * the visitor's browser calls them. Unset means open, which is only safe
+   * when this port is not reachable from outside (`VITRUS_PASSWORD`).
+   */
+  password?: string;
+}
+
+/** Constant-time comparison, so the answer time does not spell the password. */
+function sameSecret(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a);
+  const y = new TextEncoder().encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
+/** True when the request carries the dashboard password (Basic auth, any user). */
+export function authorized(req: Request, password: string | undefined): boolean {
+  if (!password) return true;
+  const h = req.headers.get("authorization") ?? "";
+  if (!h.toLowerCase().startsWith("basic ")) return false;
+  let decoded = "";
+  try {
+    decoded = atob(h.slice(6).trim());
+  } catch {
+    return false;
+  }
+  return sameSecret(decoded.slice(decoded.indexOf(":") + 1), password);
 }
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -103,6 +133,17 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
     // — Session replay (opt-in per site; see core/replay.ts) —
     const replay = await replayPublicRoute(req, url, { store: opts.store, secret: opts.secret, recorderPath: replayPath });
     if (replay) return replay;
+
+    // Everything below that is not ingest reads (or, for replay settings,
+    // changes) the analytics, so it needs the password when one is set.
+    const isIngest = (path === "/api/d" || path === "/api/collect") && req.method === "POST";
+    if (!isIngest && !authorized(req, opts.password)) {
+      return new Response("password required", {
+        status: 401,
+        headers: { "www-authenticate": 'Basic realm="vitrus", charset="UTF-8"', "content-type": "text/plain" },
+      });
+    }
+
     if (path.startsWith("/api/replay")) {
       // Self-hosted has one operator and no accounts, like /api/stats: the
       // site only has to exist. Put the dashboard behind your own auth.
@@ -118,9 +159,16 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
     // blockers match `/api/collect` as a path on ANY domain — first-party
     // included — and a visitor silently goes uncounted (seen on vitrus.dev).
     if ((path === "/api/d" || path === "/api/collect") && req.method === "POST") {
+      // An event is a few hundred bytes; this endpoint is public. Cap what a
+      // stranger can make us parse (Bun's default limit is 128 MB).
+      if (Number(req.headers.get("content-length") ?? 0) > 65_536) {
+        return json({ ok: false, reason: "body_too_large" }, 413, CORS);
+      }
+      const text = await req.text().catch(() => "");
+      if (text.length > 65_536) return json({ ok: false, reason: "body_too_large" }, 413, CORS);
       let body: unknown;
       try {
-        body = await req.json();
+        body = JSON.parse(text);
       } catch {
         return json({ ok: false, reason: "invalid_json" }, 400, CORS);
       }
@@ -215,7 +263,13 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
     if (path === "/" || path === "/index.html") {
       const sites = await opts.store.listSites();
       return new Response(dashboardHtml(sites), {
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          // Not framable by another site (clickjacking on the replay settings).
+          "x-frame-options": "DENY",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-content-type-options": "nosniff",
+        },
       });
     }
 
@@ -239,6 +293,10 @@ async function bundleFor(store: Store, site: Site, days: number) {
   });
 }
 
+export const OPEN_DASHBOARD_WARNING =
+  "⚠ VITRUS_PASSWORD is not set: anyone who can reach this port can read your analytics\n" +
+  "  and change replay settings. Set it before exposing the server (the tracker and ingest stay public).";
+
 export async function startServer(opts: ServerOptions) {
   const handle = createHandler(opts);
   const server = Bun.serve({
@@ -259,6 +317,8 @@ if (import.meta.main) {
     await store.setMeta("visitor_secret", secret);
   }
   const port = Number(process.env.PORT ?? 3000);
-  const server = await startServer({ store, secret, port });
+  const password = process.env.VITRUS_PASSWORD || undefined;
+  const server = await startServer({ store, secret, port, password });
   console.log(`vitrus → http://localhost:${server.port}  (db: ${dbPath})`);
+  if (!password) console.warn(OPEN_DASHBOARD_WARNING);
 }
