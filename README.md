@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://vitrus.dev"><img src=".github/assets/banner.png" alt="Vitrus — analytics that shows its work" width="100%"></a>
+  <a href="https://vitrus.dev"><img src=".github/assets/banner.png" alt="Vitrus — web analytics you can check" width="100%"></a>
 </p>
 
 <p align="center">
@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <a href="https://vitrus.dev/demo"><b>Live demo</b></a> ·
   <a href="https://vitrus.dev"><b>Website</b></a> ·
   <a href="https://app.vitrus.dev"><b>Cloud</b></a> ·
   <a href="https://vitrus.dev/docs"><b>Documentation</b></a> ·
@@ -51,7 +52,8 @@ Then one line in your site's `<head>`:
 ```
 
 No Docker Compose file, no database server, no migration step. Rather not run it? **[app.vitrus.dev](https://app.vitrus.dev)**
-is the same engine, hosted, with a free plan.
+is the same engine, hosted, with a free plan — and **[the live demo](https://vitrus.dev/demo)** opens the full hosted
+dashboard on sample data, no account needed.
 
 ## Every number opens the query that made it
 
@@ -93,7 +95,7 @@ The drop coincides with the last deploy. [e1, e7]
   </tr>
 </table>
 
-<sub>Screenshots: the hosted dashboard on a demo workspace; every figure is sample data. The self-hosted
+<sub>Screenshots: the hosted dashboard on a demo workspace; every figure is sample data — <a href="https://vitrus.dev/demo">open it yourself</a>. The self-hosted
 dashboard in this repository is simpler today — see <a href="#architecture">Architecture</a> for exactly which views it renders.</sub>
 
 ## What it is, in one paragraph
@@ -136,8 +138,10 @@ server to install.
 - **Digests: what happened → why → what to do.** `vitrus digest` writes one in your terminal, every
   line tagged with the evidence ids behind it. The Slack / email / webhook channels and the
   never-sent-twice scheduler ship in the core.
-- **A read-only MCP module** for AI agents that returns the evidence with every metric, so an agent
-  can cite instead of assert.
+- **A read-only MCP server** for AI agents that returns the evidence with every metric, so an agent
+  can cite instead of assert. On the cloud it is one line:
+  `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp --header "Authorization: Bearer vk_…"`
+  (a workspace API key; read-only by construction).
 - **Private by construction.** No cookies, no stored identifier, no fingerprinting, no consent
   banner. Do Not Track honoured by default. A **2.6 KB** tracker. **Zero** runtime dependencies,
   enforced by CI.
