@@ -138,10 +138,11 @@ server to install.
 - **Digests: what happened → why → what to do.** `vitrus digest` writes one in your terminal, every
   line tagged with the evidence ids behind it. The Slack / email / webhook channels and the
   never-sent-twice scheduler ship in the core.
-- **A read-only MCP server** for AI agents that returns the evidence with every metric, so an agent
-  can cite instead of assert. On the cloud it is one line:
-  `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp --header "Authorization: Bearer vk_…"`
-  (a workspace API key; read-only by construction).
+- **A read-only MCP server** with 15 tools — any metric by any dimension, real-time, AI traffic, revenue,
+  goals, funnels, journeys, retention, vitals, errors — that returns the evidence with every number, so
+  an agent can cite instead of assert. On the cloud, ChatGPT and Claude connect with OAuth (add
+  `https://app.vitrus.dev/mcp`, sign in, pick a workspace); Claude Code is one line:
+  `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp`.
 - **Private by construction.** No cookies, no stored identifier, no fingerprinting, no consent
   banner. Do Not Track honoured by default. A **2.6 KB** tracker. **Zero** runtime dependencies,
   enforced by CI.

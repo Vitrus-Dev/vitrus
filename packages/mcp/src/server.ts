@@ -40,7 +40,7 @@ export async function handleRpc(ctx: ToolContext, body: unknown): Promise<unknow
       return result(id, {
         protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: { tools: {} },
-        serverInfo: { name: "vitrus", version: "0.1.0" },
+        serverInfo: { name: "vitrus", title: "Vitrus analytics", version: "0.6.0" },
         instructions:
           "Vitrus analytics, read-only. Every metric comes back with the SQL that produced it, its " +
           "parameters and the raw rows. When you report a number, cite the evidence id — and if a " +
