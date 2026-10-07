@@ -1,0 +1,10 @@
+{
+  "name": "vitrus",
+  "version": "0.6.0",
+  "description": "Read your Vitrus analytics from Claude Code — every number comes with the query that produced it. Read-only MCP server plus four skills.",
+  "author": { "name": "Vitrus", "url": "https://vitrus.dev" },
+  "homepage": "https://vitrus.dev/docs/mcp",
+  "repository": "https://github.com/Vitrus-Dev/vitrus",
+  "license": "Apache-2.0",
+  "keywords": ["analytics", "web-analytics", "mcp", "privacy", "ai-traffic"]
+}

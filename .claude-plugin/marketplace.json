@@ -1,0 +1,12 @@
+{
+  "name": "vitrus",
+  "description": "Vitrus — web analytics you can check. Read your analytics from Claude Code, with the SQL behind every number.",
+  "owner": { "name": "Vitrus", "url": "https://vitrus.dev" },
+  "plugins": [
+    {
+      "name": "vitrus",
+      "source": "./plugins/vitrus",
+      "description": "Connects the Vitrus MCP server (read-only, OAuth) and adds skills: weekly report, traffic-drop check, measurement plan, AI-search audit."
+    }
+  ]
+}

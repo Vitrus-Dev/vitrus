@@ -1,0 +1,8 @@
+{
+  "name": "vitrus",
+  "version": "0.6.0",
+  "description": "Read your Vitrus analytics — every number with the query behind it. Read-only.",
+  "mcpServers": {
+    "vitrus": { "httpUrl": "https://app.vitrus.dev/mcp" }
+  }
+}

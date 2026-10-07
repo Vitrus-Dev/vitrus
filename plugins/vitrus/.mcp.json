@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vitrus": {
+      "type": "http",
+      "url": "https://app.vitrus.dev/mcp"
+    }
+  }
+}

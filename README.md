@@ -9,6 +9,7 @@
 
 <p align="center">
   <a href="https://vitrus.dev/demo"><b>Live demo</b></a> ·
+  <a href="#ask-your-ai-about-your-analytics"><b>Use with ChatGPT / Claude</b></a> ·
   <a href="https://vitrus.dev"><b>Website</b></a> ·
   <a href="https://app.vitrus.dev"><b>Cloud</b></a> ·
   <a href="https://vitrus.dev/docs"><b>Documentation</b></a> ·
@@ -97,6 +98,33 @@ The drop coincides with the last deploy. [e1, e7]
 
 <sub>Screenshots: the hosted dashboard on a demo workspace; every figure is sample data — <a href="https://vitrus.dev/demo">open it yourself</a>. The self-hosted
 dashboard in this repository is simpler today — see <a href="#architecture">Architecture</a> for exactly which views it renders.</sub>
+
+## Ask your AI about your analytics
+
+Vitrus speaks MCP. Your assistant reads your analytics — read-only — and every number it gets back comes
+with the query that produced it, so it can cite instead of assert. Listed in the official
+[MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=dev.vitrus) as `dev.vitrus/analytics`.
+
+| Where | How |
+|---|---|
+| **ChatGPT** · **Claude** (web & desktop) | Add a custom connector with `https://app.vitrus.dev/mcp`, sign in, pick a workspace, Allow. |
+| **Claude Code** — plugin with 4 skills | `claude plugin marketplace add Vitrus-Dev/vitrus` then `claude plugin install vitrus@vitrus` |
+| **Claude Code** — server only | `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp` |
+| **Cursor** | <a href="https://cursor.com/en/install-mcp?name=vitrus&config=eyJ1cmwiOiJodHRwczovL2FwcC52aXRydXMuZGV2L21jcCJ9"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add Vitrus to Cursor" height="28"></a> |
+| **Gemini CLI** | `gemini extensions install https://github.com/Vitrus-Dev/vitrus` |
+| Anything else | `{"type": "http", "url": "https://app.vitrus.dev/mcp"}` — OAuth, or `Authorization: Bearer vk_…` (a workspace API key) |
+
+The plugin's skills, under [`plugins/vitrus/skills`](plugins/vitrus/skills):
+
+- **`/vitrus:weekly-report`** — last week against the week before, channels, AI assistants, goals; every figure cited.
+- **`/vitrus:traffic-drop`** — finds the day a number broke and the segment it lives in, then checks errors and Web Vitals.
+- **`/vitrus:measurement-plan`** — reads your code and proposes the events, goals, funnels and revenue calls to add.
+- **`/vitrus:ai-search-audit`** — which assistants send people, which pages the AI crawlers read, and where the two disagree.
+
+15 tools, all read-only: `query_stats` (any metric by any of 20 dimensions or by day, with filters),
+`get_realtime`, `get_ai_traffic`, `get_revenue`, `goal_report`, `analyze_funnel`, `get_journeys`,
+`get_retention`, `get_web_vitals`, `get_errors`, `get_digest` and more — [docs](https://vitrus.dev/docs/mcp).
+Connections are scoped to one workspace and can be disconnected any time under **Account → Connected apps**.
 
 ## What it is, in one paragraph
 
