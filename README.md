@@ -209,7 +209,7 @@ documentation — if a cell is out of date, please [open an issue](https://githu
 |---|:---:|:---:|:---:|:---:|:---:|
 | Open source | ✗ | ✓ AGPL-3.0 | ✓ MIT | ✓ AGPL-3.0 | **✓ Apache-2.0** |
 | Cookie-free, no consent banner | ✗ | ✓ | ✓ | ✓ | **✓** |
-| Services to install | — | Postgres + ClickHouse | Postgres or MySQL | Postgres + ClickHouse | **none** |
+| Services to install | — | Postgres + ClickHouse | Postgres or MySQL | Postgres + ClickHouse | **none** (one SQLite file) |
 | Tracker size (gzipped) | ~28 KB | ~1 KB | ~2 KB | ~18 KB | **2.6 KB** |
 | AI assistants as a channel | ✗ | ✓ | ✓ | ✓ | **✓** |
 | Crawler reads separated from the humans they send | ✗ | ✗ | ✗ | ✓ | **✓** |
@@ -230,7 +230,7 @@ documentation — if a cell is out of date, please [open an issue](https://githu
 - **AI summaries cannot make numbers up.** A sentence whose number is not in the evidence is removed.
 - **AI traffic, told apart properly.** Visitors that ChatGPT or Perplexity sent you are one thing; the AI
   crawlers reading your pages are another; agents that sign their requests are verified and named.
-- **Nothing to operate.** One process and an embedded database. The others need a database server —
+- **Nothing to operate.** One process and one SQLite file (built into the Bun runtime). The others need a database server —
   Postgres or MySQL, and for two of them ClickHouse as well.
 - **The privacy default is the strict one.** The visitor id is re-salted every day, always.
 
