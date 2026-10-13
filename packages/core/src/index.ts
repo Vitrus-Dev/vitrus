@@ -259,3 +259,4 @@ export {
 } from "./replay.ts";
 export { REPLAY_PLAYER_JS } from "./replay-player.ts";
 export { replayPublicRoute, replaySiteApi, type PublicReplayOptions, type SiteReplayOptions } from "./replay-http.ts";
+export { ICON_SVG, FAVICON_DATA_URI } from "./brand.ts";

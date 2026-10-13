@@ -15,7 +15,7 @@
 // metric added to `metrics/queries.ts` appears here without anyone remembering
 // to come back.
 
-import { REPLAY_PLAYER_JS, type Site } from "@vitrus/core";
+import { FAVICON_DATA_URI, REPLAY_PLAYER_JS, type Site } from "@vitrus/core";
 
 export function dashboardHtml(sites: Site[]): string {
   const options = sites.length
@@ -28,6 +28,7 @@ export function dashboardHtml(sites: Site[]): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vitrus — provable analytics</title>
+<link rel="icon" href="${FAVICON_DATA_URI}">
 <style>
   :root {
     color-scheme: light dark;

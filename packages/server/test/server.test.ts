@@ -154,6 +154,10 @@ describe("the self-hosted dashboard shows the whole engine", () => {
     { id: "s1", name: "Site", domain: "site.example", vertical: "landing", createdAt: 0 },
   ]);
 
+  test("the tab carries the Vitrus icon, inline", () => {
+    expect(html).toContain('<link rel="icon" href="data:image/svg+xml,');
+  });
+
   test("it renders the sections the documentation promises", () => {
     // The open-core claim is that no metric is held back from this repository.
     // The engine always computed these; for a while only the screen was missing,
