@@ -185,6 +185,7 @@ export {
   type PeopleResult,
   type PersonRow,
 } from "./metrics/people.ts";
+export { computeHeatmap, deviceOf, HeatmapError, HEAT_DEVICES, RECORDINGS_MAX, SCROLL_BIN, type HeatmapResult, type HeatDevice } from "./heatmap.ts";
 export { scrubProps, normalizePlan, isPersonalKey, isPersonalValue, PLAN_MAX } from "./pii.ts";
 export {
   importUmamiCsv,

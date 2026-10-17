@@ -134,6 +134,10 @@ Self-hosted: `GET /api/people?site=…`, `GET /api/lifecycle?site=…` and `GET 
     <td><img src=".github/assets/tile-performance.webp" alt="Core Web Vitals at p75"><br><b>Web Vitals.</b> LCP, INP, CLS, FCP and TTFB at the percentile you choose, per page.</td>
     <td><img src=".github/assets/tile-retention.webp" alt="A retention cohort matrix"><br><b>Retention.</b> Cohorts of identified users — and an honest blank for days that have not happened yet.</td>
   </tr>
+  <tr>
+    <td><img src=".github/assets/tile-heatmap.webp" alt="A click heatmap over a recorded page"><br><b>Heatmaps.</b> Clicks and scroll depth per device class, drawn over the page from your own recordings — nothing extra collected.</td>
+    <td><img src=".github/assets/tile-users.webp" alt="The Users page"><br><b>Users.</b> Every signed-in user under a made-up name — returning, one-time, signed up only — with actions by day.</td>
+  </tr>
 </table>
 
 <sub>Screenshots: the hosted dashboard on a demo workspace; every figure is sample data — <a href="https://vitrus.dev/demo">open it yourself</a>. The self-hosted

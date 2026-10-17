@@ -292,3 +292,13 @@ describe("people", () => {
     expect((await handle(new Request("http://localhost/api/people?site=demo&sort=email"))).status).toBe(400);
   });
 });
+
+describe("heatmaps", () => {
+  test("/api/heatmap answers on a self-hosted install with no plan check; a bad device is a 400", async () => {
+    const { handle } = await harness();
+    const r = await handle(new Request("http://localhost/api/heatmap?site=demo"));
+    expect(r.status).toBe(200);
+    expect(((await r.json()) as { heatmap: { recordings: number } }).heatmap.recordings).toBe(0);
+    expect((await handle(new Request("http://localhost/api/heatmap?site=demo&device=watch"))).status).toBe(400);
+  });
+});

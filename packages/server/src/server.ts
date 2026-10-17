@@ -11,6 +11,8 @@ import {
   computePortfolio,
   listPeople,
   personDetail,
+  computeHeatmap,
+  HeatmapError,
   PeopleError,
   bucketFor,
   countryFromHeaders,
@@ -304,6 +306,28 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
         });
       } catch (e) {
         if (e instanceof PeopleError) return json({ ok: false, reason: e.message }, 400);
+        throw e;
+      }
+    }
+
+    // — Heatmaps, from this site's own recordings (core/heatmap.ts) —
+    if (path === "/api/heatmap") {
+      const siteId = url.searchParams.get("site") ?? "";
+      const site = await opts.store.getSite(siteId);
+      if (!site) return json({ ok: false, reason: "site_unknown" }, 404);
+      const days = clampDays(url.searchParams.get("days"));
+      const win = windowOf(Date.now(), days, `last ${days} days`);
+      try {
+        const heatmap = await computeHeatmap(opts.store, {
+          siteId: site.id,
+          from: win.from,
+          to: win.to,
+          path: url.searchParams.get("path") ?? undefined,
+          device: url.searchParams.get("device") ?? undefined,
+        });
+        return json({ heatmap, window: win });
+      } catch (e) {
+        if (e instanceof HeatmapError) return json({ ok: false, reason: e.message }, 400);
         throw e;
       }
     }
