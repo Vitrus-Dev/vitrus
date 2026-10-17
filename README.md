@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://vitrus.dev"><img src=".github/assets/banner.png" alt="Vitrus — web analytics you can check" width="100%"></a>
+  <a href="https://vitrus.dev"><img src=".github/assets/banner.png" alt="Vitrus — open-source analytics for every app you ship. One panel you can check." width="100%"></a>
 </p>
 
 <p align="center">
-  <b>All your apps. One panel you can check.</b><br>
-  Open-source, cookie-free web and product analytics for people who ship more than one app — traffic, users,<br>
-  retention and revenue side by side, without storing who your users are. Every number carries the SQL that<br>
-  produced it, and your AI agent can ask about all of them over MCP. One process, on your own server.
+  <b>Open-source analytics for every app you ship. One panel you can check.</b><br>
+  Cookie-free web and product analytics for websites, iOS and Android apps — traffic, users, retention and<br>
+  revenue side by side, without storing who your users are. Every number carries the SQL that produced it,<br>
+  and your AI agent can ask about all of them over MCP. One process, on your own server.
 </p>
 
 <p align="center">
