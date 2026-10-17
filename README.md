@@ -165,9 +165,9 @@ The plugin's skills, under [`plugins/vitrus/skills`](plugins/vitrus/skills):
 - **`/vitrus:measurement-plan`** — reads your code and proposes the events, goals, funnels and revenue calls to add.
 - **`/vitrus:ai-search-audit`** — which assistants send people, which pages the AI crawlers read, and where the two disagree.
 
-15 tools, all read-only: `query_stats` (any metric by any of 20 dimensions or by day, with filters),
-`get_realtime`, `get_ai_traffic`, `get_revenue`, `goal_report`, `analyze_funnel`, `get_journeys`,
-`get_retention`, `get_web_vitals`, `get_errors`, `get_digest` and more — [docs](https://vitrus.dev/docs/mcp).
+17 tools, all read-only: `query_stats` (any metric by any of 20 dimensions or by day, with filters),
+`get_portfolio` (all your apps side by side), `get_lifecycle`, `get_realtime`, `get_ai_traffic`, `get_revenue`,
+`goal_report`, `analyze_funnel`, `get_journeys`, `get_retention`, `get_web_vitals`, `get_errors`, `get_digest` and more — [docs](https://vitrus.dev/docs/mcp).
 Connections are scoped to one workspace and can be disconnected any time under **Account → Connected apps**.
 
 ## What it is, in one paragraph
@@ -210,8 +210,8 @@ server to install.
 - **Digests: what happened → why → what to do.** `vitrus digest` writes one in your terminal, every
   line tagged with the evidence ids behind it. The Slack / email / webhook channels and the
   never-sent-twice scheduler ship in the core.
-- **A read-only MCP server** with 15 tools — any metric by any dimension, real-time, AI traffic, revenue,
-  goals, funnels, journeys, retention, vitals, errors — that returns the evidence with every number, so
+- **A read-only MCP server** with 17 tools — any metric by any dimension, every app side by side, user lifecycle,
+  real-time, AI traffic, revenue, goals, funnels, journeys, retention, vitals, errors — that returns the evidence with every number, so
   an agent can cite instead of assert. On the cloud, ChatGPT and Claude connect with OAuth (add
   `https://app.vitrus.dev/mcp`, sign in, pick a workspace); Claude Code is one line:
   `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp`.
