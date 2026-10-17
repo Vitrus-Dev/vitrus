@@ -42,7 +42,7 @@ export {
   type PrivacyMode,
   type PrivacyPolicy,
 } from "./privacy.ts";
-export { visitorId, identityId, dayKey, SESSION_WINDOW_MS } from "./visitor.ts";
+export { visitorId, identityId, preHashIdentity, PRE_HASHED, dayKey, SESSION_WINDOW_MS } from "./visitor.ts";
 export { validateEvent, LIMITS, type ValidationResult } from "./validate.ts";
 export { Ingestor, splitUrl, type IngestOptions, type IngestResult } from "./ingest.ts";
 export { type Store, SCHEMA_VERSION } from "./store/store.ts";
@@ -157,6 +157,24 @@ export {
   type RevenueResult,
 } from "./metrics/revenue.ts";
 export { REVENUE_MAX } from "./validate.ts";
+export {
+  computeLifecycle,
+  ACCOUNTING_SQL,
+  FREE_PLANS,
+  LIFECYCLE_EVENTS,
+  ONE_AND_DONE_DAYS,
+  type LifecycleResult,
+  type LifecycleAvailable,
+} from "./metrics/lifecycle.ts";
+export {
+  computePortfolio,
+  PortfolioError,
+  PORTFOLIO_MAX_SITES,
+  type PortfolioResult,
+  type PortfolioRow,
+  type PortfolioSite,
+} from "./metrics/portfolio.ts";
+export { scrubProps, normalizePlan, isPersonalKey, isPersonalValue, PLAN_MAX } from "./pii.ts";
 export {
   importUmamiCsv,
   removeImport,

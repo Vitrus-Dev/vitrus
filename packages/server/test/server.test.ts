@@ -244,3 +244,36 @@ describe("VITRUS_PASSWORD", () => {
     expect((await h(new Request("http://l/health"))).status).toBe(200);
   });
 });
+
+describe("lifecycle and portfolio", () => {
+  test("/api/lifecycle counts identified people and never returns a raw id", async () => {
+    const { handle } = await harness();
+    for (const who of ["ayse@example.com", "u2"]) {
+      expect((await handle(collect({ site: "demo", type: "event", name: "signup", url: "/app", identity: who, props: { plan: "free", email: who } }))).status).toBe(204);
+    }
+    // The window ends at "now", exclusive: an event written in this very millisecond is not in it yet.
+    await Bun.sleep(5);
+    const res = await handle(new Request("http://localhost/api/lifecycle?site=demo&days=7"));
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).not.toContain("ayse");
+    const body = JSON.parse(text) as { lifecycle: { available: boolean; accounting: { rows: { active: number; new_users: number }[] }; privacy: { rows: { pii_dropped: number }[] } } };
+    expect(body.lifecycle.available).toBe(true);
+    expect(body.lifecycle.accounting.rows[0]).toMatchObject({ active: 2, new_users: 2 });
+    expect(body.lifecycle.privacy.rows[0]!.pii_dropped).toBe(2);
+  });
+
+  test("/api/portfolio lists every site, and both routes sit behind the dashboard password", async () => {
+    const store = new SqliteStore(":memory:");
+    await store.init();
+    await store.upsertSite(SITE);
+    await store.upsertSite({ id: "two", name: "Two", domain: "two.example", vertical: "generic", createdAt: 0 });
+    const handle = createHandler({ store, secret: "s", password: "pw" });
+    expect((await handle(new Request("http://localhost/api/portfolio"))).status).toBe(401);
+    expect((await handle(new Request("http://localhost/api/lifecycle?site=demo"))).status).toBe(401);
+    const auth = { authorization: `Basic ${btoa("x:pw")}` };
+    const res = await handle(new Request("http://localhost/api/portfolio?days=30", { headers: auth }));
+    const body = (await res.json()) as { portfolio: { rows: { site: { id: string } }[] } };
+    expect(body.portfolio.rows.map((r) => r.site.id).sort()).toEqual(["demo", "two"]);
+  });
+});

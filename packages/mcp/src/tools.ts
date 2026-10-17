@@ -23,6 +23,8 @@ import {
   computeJourneys,
   computeRetention,
   computeRevenue,
+  computeLifecycle,
+  computePortfolio,
   defaultFunnel,
   filterValues,
   HUMAN,
@@ -275,6 +277,25 @@ export const TOOLS: ToolDef[] = [
       },
       required: ["site"],
     },
+  },
+  {
+    name: "get_lifecycle",
+    title: "User lifecycle",
+    description:
+      "Signed-in users, counted — never listed: active, new, retained, came back, lost (churned) versus the previous " +
+      "period of equal length, quick ratio, one-and-done rate, current plans, who became paying and who stopped. " +
+      "Needs vitrus.identify(user.id) on the site; the id is hashed in the browser and again on the server, so no " +
+      "email or name exists to return. Each number comes with its query.",
+    inputSchema: { type: "object", properties: { ...SITE_PROP, ...RANGE_PROP }, required: ["site"] },
+  },
+  {
+    name: "get_portfolio",
+    title: "Portfolio: all sites",
+    description:
+      "Every site you can read in one table: visitors (with the previous period), active and new users, lost users, " +
+      "signups, became paying, paying users and revenue per currency, plus totals. Counts are added across sites — " +
+      "identities are hashed per site, so the same person on two sites counts twice, by design.",
+    inputSchema: { type: "object", properties: { ...RANGE_PROP } },
   },
   {
     name: "get_journeys",
@@ -641,6 +662,62 @@ export async function callTool(ctx: ToolContext, name: string, args: Record<stri
       }
     }
 
+    case "get_lifecycle": {
+      const site = resolveSite(ctx, args.site);
+      const range = rangeOf(ctx, args);
+      const s = await ctx.store.getSite(site);
+      const r = await computeLifecycle((sql, params) => ctx.store.select(sql, params), {
+        siteId: site,
+        from: range.from,
+        to: range.to,
+        bucketMs: 86_400_000,
+        privacyMode: s?.privacyMode,
+      });
+      if (!r.available) return { site, window: range.label, available: false, reason: r.reason, message: r.message, remedy: r.remedy };
+      return {
+        site,
+        window: range.label,
+        available: true,
+        people: r.accounting.rows[0],
+        gained: r.gained,
+        lost: r.lost,
+        net: r.net,
+        quickRatio: r.quickRatio,
+        retainedRate: r.retainedRate,
+        oneAndDoneRate: r.oneAndDoneRate,
+        ...(r.oneAndDoneNote ? { oneAndDoneNote: r.oneAndDoneNote } : {}),
+        events: r.events.rows,
+        plans: r.plans.rows,
+        becamePaying: r.upgrades.rows,
+        stoppedPaying: r.downgrades.rows,
+        privacyCheck: r.privacy.rows[0],
+        evidence: [queryOut(r.accounting), queryOut(r.oneAndDone), queryOut(r.events), queryOut(r.plans), queryOut(r.upgrades), queryOut(r.downgrades)],
+        note:
+          "Compared with the previous period of equal length. 'lost' = active then, not now. Counts only: identities are hashed and per site.",
+      };
+    }
+
+    case "get_portfolio": {
+      const range = rangeOf(ctx, args);
+      const sites = [];
+      const strict: string[] = [];
+      for (const id of ctx.allowedSiteIds.slice(0, 100)) {
+        const s = await ctx.store.getSite(id);
+        if (!s) continue;
+        sites.push({ id: s.id, name: s.name, domain: s.domain });
+        if (s.privacyMode === "strict") strict.push(s.id);
+      }
+      const p = await computePortfolio((sql, params) => ctx.store.select(sql, params), { sites, from: range.from, to: range.to, strict });
+      return {
+        window: range.label,
+        sites: p.rows,
+        totals: p.totals,
+        evidence: Object.values(p.evidence).map((q) => queryOut(q, 0)),
+        note:
+          "Totals add sites together. The same person on two sites is two people: identities are hashed per site, so they cannot be joined. Revenue is per currency, never converted. people is null for a site in strict privacy mode.",
+      };
+    }
+
     case "get_journeys": {
       const site = resolveSite(ctx, args.site);
       const range = rangeOf(ctx, args);
@@ -688,7 +765,8 @@ export async function callTool(ctx: ToolContext, name: string, args: Record<stri
         snippet: '<script defer data-site="' + site + '" src="' + origin + '/v.js"></script>',
         customEvent: 'vitrus("signup", { plan: "pro" })',
         revenue: 'vitrus("purchase", { revenue: 29, currency: "USD" })',
-        identify: 'vitrus.identify("user-123")  // makes retention possible; the id is hashed, never stored raw',
+        identify: 'vitrus.identify(user.id)  // on every page while signed in: retention + lifecycle; hashed in the browser, never sent raw',
+        lifecycle: 'vitrus("signup") · vitrus("login") · vitrus("plan", { plan: "pro" })  // optional; counted, never listed',
         note: "Cookie-free: no consent banner needed. Put the tag in <head> on every page.",
       };
     }

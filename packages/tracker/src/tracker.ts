@@ -8,6 +8,10 @@
 //    "exclude my own visits" flag, which holds the literal string "1" and is
 //    never sent anywhere — see IGNORE_KEY below.
 //  - No personal data is collected: a form FIELD name is sent, its VALUE never is.
+//  - identify(id) hashes the id IN THE BROWSER (sha256 of site + id) before
+//    anything is sent; the raw id never crosses the network. Properties that
+//    name or contain personal data (email, phone, name, …) are dropped here
+//    too — the server drops them again (core/pii.ts), this is the first line.
 //  - Exit events go out via `sendBeacon` (fetch is cancelled as the page unloads).
 //  - No error ever escapes into the page; the tracker can die and the site keeps working.
 
@@ -29,13 +33,17 @@ interface Payload {
 declare global {
   interface Window {
     vitrus?: {
-      (name: string, props?: Record<string, string | number | boolean | null>): void;
+      /** A custom event — or `vitrus("identify", id, traits)`, the form the loader stub queues. */
+      (name: string, props?: Record<string, string | number | boolean | null> | string, traits?: Record<string, string | number | boolean | null>): void;
       /**
-       * The precondition for retention — see core/metrics/retention.ts.
-       * Optional traits are sent once as an "identify" event and stored as
-       * sent: only pass what your privacy notice covers.
+       * The precondition for retention and lifecycle — see
+       * core/metrics/lifecycle.ts. The id is hashed here before it is sent.
+       * Optional traits ({ plan: "pro" }) are sent once as an "identify"
+       * event, with personal fields removed.
        */
       identify?: (id: string, traits?: Record<string, string | number | boolean | null>) => void;
+      /** Calls made through the loader stub before this script arrived. */
+      q?: ArrayLike<unknown>[];
     };
   }
 }
@@ -92,6 +100,9 @@ declare global {
   // back on. This is the one place a local flag is written, and it holds no
   // personal data: the value is the literal string "1". It is stored under a
   // clearly named key so anyone can find and delete it.
+  // The keys people actually send; the server's list (core/pii.ts) is longer,
+  // and a test pins this one as a subset of it.
+  const PII_KEY = /^(e?mail|phone|(first|last|full|sur)name|address|pass(word)?|token|ip|tckn)$/i;
   const IGNORE_KEY = "vitrus.ignore";
   try {
     const q = new URLSearchParams(location.search).get("vitrus_ignore");
@@ -116,6 +127,8 @@ declare global {
 
   let lastPath = "";
   let identity = "";
+  /** While identify() is hashing, sends wait for it: no event leaves without the id the page asked for. */
+  let hashing: Promise<void> | null = null;
   let maxScroll = 0;
   let touchedField = "";
   let formSubmitted = false;
@@ -127,6 +140,14 @@ declare global {
     // must be silent for pageviews, custom events, the exit summary and Web
     // Vitals alike. One gate, no way to forget one of them.
     if (pageSkipped) return;
+    if (hashing) {
+      hashing.then(() => send(p, beacon));
+      return;
+    }
+    // The identity is only sent when the site owner called identify(). It is
+    // never persisted: it is lost on reload and is expected to be set again —
+    // storing it would weaken the consent-free claim.
+    if (identity) p.identity = identity;
     try {
       const body = JSON.stringify(p);
       if (beacon && navigator.sendBeacon) {
@@ -215,10 +236,6 @@ declare global {
       hostname: location.hostname,
     };
     if (tag) p.tag = tag;
-    // The identity is only sent when the site owner called identify(). It is
-    // never persisted: it is lost on reload and is expected to be set again —
-    // storing it would weaken the consent-free claim.
-    if (identity) p.identity = identity;
     return p;
   }
 
@@ -249,7 +266,7 @@ declare global {
     const p = base();
     p.type = "event";
     p.name = name;
-    if (props) p.props = props;
+    if (props) p.props = clean(props);
     send(p, beacon);
   }
 
@@ -480,12 +497,54 @@ declare global {
   exposeApi();
   pageview();
 
+  /**
+   * Personal data never leaves the browser in a property: keys that name it
+   * and values shaped like an email or an international phone number are
+   * dropped. The server applies the full list again (core/pii.ts), so an
+   * edited script changes nothing about what is stored.
+   */
+  function clean(o: NonNullable<Payload["props"]>): NonNullable<Payload["props"]> {
+    const r: NonNullable<Payload["props"]> = {};
+    for (const k in o) {
+      const v = o[k] as string | number | boolean | null;
+      if (
+        !PII_KEY.test(k.replace(/[\s_.-]/g, "")) &&
+        // A number or boolean never matches; String() only saves a type check.
+        !/^\s*([^\s@]+@[^\s@]+\.[a-z]{2,}|\+[\d\s().-]{8,22})\s*$/i.test(String(v))
+      )
+        r[k] = v;
+    }
+    return r;
+  }
+
   function exposeApi(): void {
-    const api = ((n: string, p?: Payload["props"]) => event(n, p)) as NonNullable<Window["vitrus"]>;
+    const queued = window.vitrus?.q;
+    const api = ((n: string, p?: Payload["props"] | string, t?: Payload["props"]) =>
+      n === "identify" && typeof p === "string" ? api.identify!(p, t) : event(n, p as Payload["props"])) as NonNullable<Window["vitrus"]>;
     api.identify = (id: string, traits?: Payload["props"]): void => {
-      identity = String(id ?? "").slice(0, 200);
-      if (identity && traits) event("identify", traits);
+      // Any length is fine: what is sent is a fixed-size hash.
+      const raw = String(id ?? "").trim();
+      identity = "";
+      // `crypto` itself exists in every browser this script runs in (it uses ES2020); only `subtle` is missing on plain http.
+      const subtle = crypto.subtle;
+      // No WebCrypto (a plain-http page): fail closed — the id is NOT sent
+      // raw, it is not sent at all.
+      if (!raw || !subtle) return;
+      // A later identify() supersedes an earlier one still hashing; a failed
+      // digest clears the wait instead of holding every event forever.
+      const job: Promise<void> = subtle
+        .digest("SHA-256", new TextEncoder().encode(site + "|" + raw))
+        .then((b) => Array.from(new Uint8Array(b), (x) => (x | 256).toString(16).slice(1)).join(""), () => "")
+        .then((h) => {
+          if (hashing === job) {
+            identity = h;
+            hashing = null;
+          }
+        });
+      hashing = job;
+      if (traits) event("identify", traits);
     };
     window.vitrus = api;
+    if (queued) for (const a of queued as unknown as Iterable<unknown>[]) (api as (...x: unknown[]) => void)(...a);
   }
 })();

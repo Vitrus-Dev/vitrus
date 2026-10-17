@@ -211,3 +211,37 @@ describe("input handling", () => {
     expect(callTool(ctx, "drop_database", {})).rejects.toThrow(ToolError);
   });
 });
+
+describe("lifecycle and portfolio tools", () => {
+  test("get_lifecycle counts people with evidence and returns no identity at all", async () => {
+    const ing = new Ingestor(store, { secret: "s" });
+    for (const who of ["ayse@example.com", "u2", "u3"]) {
+      await ing.ingest({ site: "site-a", type: "event", name: "signup", url: "/app", identity: who, props: { plan: "free" } },
+        { ip: "203.0.113.4", userAgent: CHROME, now: NOW - DAY });
+    }
+    const r = (await callTool(ctx, "get_lifecycle", { site: "site-a", days: 7 })) as {
+      available: boolean; people: { new_users: number }; evidence: { query: string }[];
+    };
+    expect(r.available).toBe(true);
+    expect(r.people.new_users).toBe(3);
+    expect(r.evidence[0]!.query).toContain("GROUP BY identity");
+    expect(JSON.stringify(r)).not.toContain("ayse");
+  });
+
+  test("get_lifecycle says what to add when nobody is identified", async () => {
+    await seed("site-a", 3);
+    const r = (await callTool(ctx, "get_lifecycle", { site: "site-a" })) as { available: boolean; remedy: string };
+    expect(r.available).toBe(false);
+    expect(r.remedy).toContain("vitrus.identify");
+  });
+
+  test("get_portfolio covers exactly the sites the caller may read", async () => {
+    await seed("site-a", 2);
+    await seed("site-b", 5);
+    const r = (await callTool({ ...ctx, allowedSiteIds: ["site-a"] }, "get_portfolio", { days: 7 })) as {
+      sites: { site: { id: string }; visitors: number }[]; totals: { visitors: number };
+    };
+    expect(r.sites.map((x) => x.site.id)).toEqual(["site-a"]);
+    expect(r.totals.visitors).toBe(2);
+  });
+});

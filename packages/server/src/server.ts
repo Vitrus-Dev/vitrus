@@ -7,6 +7,9 @@ import {
   SqliteStore,
   computeFunnel,
   computeRetention,
+  computeLifecycle,
+  computePortfolio,
+  bucketFor,
   countryFromHeaders,
   geoFromHeaders,
   defaultFunnel,
@@ -257,6 +260,37 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
         to: win.to,
       });
       return json({ retention, window: win });
+    }
+
+    // — Lifecycle: new, returning, lost, paying — counts only (core/metrics/lifecycle.ts) —
+    if (path === "/api/lifecycle") {
+      const siteId = url.searchParams.get("site") ?? "";
+      const site = await opts.store.getSite(siteId);
+      if (!site) return json({ ok: false, reason: "site_unknown" }, 404);
+      const days = clampDays(url.searchParams.get("days"));
+      const win = windowOf(Date.now(), days, `last ${days} days`);
+      const lifecycle = await computeLifecycle((sql, params) => opts.store.select(sql, params), {
+        siteId: site.id,
+        from: win.from,
+        to: win.to,
+        bucketMs: bucketFor(win),
+        privacyMode: site.privacyMode,
+      });
+      return json({ lifecycle, window: win, bucketMs: bucketFor(win) });
+    }
+
+    // — Portfolio: every site on this server in one table —
+    if (path === "/api/portfolio") {
+      const days = clampDays(url.searchParams.get("days"));
+      const win = windowOf(Date.now(), days, `last ${days} days`);
+      const sites = await opts.store.listSites();
+      const portfolio = await computePortfolio((sql, params) => opts.store.select(sql, params), {
+        sites: sites.map((s) => ({ id: s.id, name: s.name, domain: s.domain })),
+        from: win.from,
+        to: win.to,
+        strict: sites.filter((s) => s.privacyMode === "strict").map((s) => s.id),
+      });
+      return json({ portfolio, window: win });
     }
 
     // — Panel —

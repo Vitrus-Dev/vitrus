@@ -14,7 +14,8 @@ import { headerSignals, score, serializeSignals } from "./signals.ts";
 import { classifyReferrer, parseUtm } from "./referrers.ts";
 import type { RawEvent, RequestContext, StoredEvent } from "./types.ts";
 import { parseUa } from "./ua.ts";
-import { SESSION_WINDOW_MS, identityId, visitorId } from "./visitor.ts";
+import { PRE_HASHED, SESSION_WINDOW_MS, identityId, visitorId } from "./visitor.ts";
+import { normalizePlan, scrubProps } from "./pii.ts";
 import type { Store } from "./store/store.ts";
 import { validateEvent } from "./validate.ts";
 import { applyToContext, applyToRaw, applyToStored, blockedByDoNotTrack, policyFor } from "./privacy.ts";
@@ -126,6 +127,18 @@ export class Ingestor {
     raw = applyToRaw(raw, policy);
     ctx = applyToContext(ctx, policy);
 
+    // Personal data never reaches disk, whatever the client sent (pii.ts).
+    // The tracker removes it in the browser already; this is the guarantee.
+    const props = { ...(raw.props ?? {}) };
+    const piiDropped = scrubProps(props);
+    if (piiDropped) props._pii_dropped = piiDropped;
+    normalizePlan(props);
+    // A user id that arrived un-hashed is hashed below and never stored, but
+    // it DID cross the network. Marked so the lifecycle page can say so and
+    // point at the fix (the current tracker hashes in the browser).
+    const rawIdentity = (raw.identity ?? "").trim();
+    if (rawIdentity && !PRE_HASHED.test(rawIdentity)) props._id_raw = true;
+
     const bot = detectBot(ctx.userAgent);
 
     // A user-agent is the client's sentence about itself; a signature is proof.
@@ -202,7 +215,7 @@ export class Ingestor {
       agentSigner: agent?.trust === "verified" ? agent.signer : "",
       botSignals: serializeSignals(signals),
       botScore: score(signals),
-      props: { ...(raw.props ?? {}), _signal: ref.signal },
+      props: { ...props, _signal: ref.signal },
     };
 
     const stored = applyToStored(event, policy);

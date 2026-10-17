@@ -22,7 +22,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-5bc8af"></a>
   <img alt="Runtime dependencies: 0" src="https://img.shields.io/badge/runtime%20deps-0-5bc8af">
-  <img alt="Tracker: 2.6 KB gzipped" src="https://img.shields.io/badge/tracker-2.6%20KB%20gzip-5bc8af">
+  <img alt="Tracker: 3.0 KB gzipped" src="https://img.shields.io/badge/tracker-3.0%20KB%20gzip-5bc8af">
   <img alt="Services to install: 0" src="https://img.shields.io/badge/services%20to%20install-0-5bc8af">
   <a href="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Vitrus-Dev/vitrus/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/Vitrus-Dev/vitrus/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Vitrus-Dev/vitrus?color=5bc8af"></a>
@@ -74,6 +74,35 @@ The drop coincides with the last deploy. [e1, e7]
 ✗ dropped: "The new theme caused a 41.7% fall in conversion."
    → 41.7 is in no evidence record, and "caused" is a claim nobody can make from this data.
 ```
+
+## Every app you ship, one panel
+
+Shipping several apps — web and mobile — usually means one admin page per app just to see who signed up.
+Add one line where your app knows the user is signed in, and Vitrus counts **who is new, who came back, who you lost
+and who started paying**, per app and for all of them side by side:
+
+```js
+vitrus.identify(user.id)           // required: hashed in the browser, never sent raw
+vitrus("signup")                   // optional
+vitrus("plan", { plan: "pro" })    // optional: your own plan labels
+```
+
+<p align="center">
+  <img src=".github/assets/shot-portfolio.webp" alt="The Portfolio page: four apps side by side with visitors, active, new and lost users, signups, paying users and revenue (demo workspace, sample data)" width="100%">
+</p>
+
+- **Counted, never listed.** New, active, came back, lost, net, quick ratio, one-and-done, current plans, became and
+  stopped paying — each with its query. There is no list of people, because none is kept.
+- **Hashed before it leaves the browser.** The script sends `sha256(site + "|" + id)`; the server hashes that again with
+  a secret before storing it. Your users' ids — often emails — never reach the server. No WebCrypto, no id sent.
+- **Separate per app, by design.** The same person in two of your apps is two unrelated hashes; nobody can join them.
+  Portfolio totals say so instead of pretending to deduplicate.
+- **Personal fields dropped twice.** Email, phone, name, address, password, token and similar properties — and any value
+  shaped like an email or phone number — are removed in the browser and again on the server, and the removal is counted.
+- **No auth provider to connect.** Works the same with Supabase, Clerk, Firebase, Better Auth or your own login.
+
+Self-hosted: `GET /api/lifecycle?site=…` and `GET /api/portfolio` on your server; over MCP, `get_lifecycle` and
+`get_portfolio`. [How it is counted →](https://vitrus.dev/docs/lifecycle)
 
 ## A whole analytics product
 
@@ -172,7 +201,7 @@ server to install.
   `https://app.vitrus.dev/mcp`, sign in, pick a workspace); Claude Code is one line:
   `claude mcp add vitrus --transport http https://app.vitrus.dev/mcp`.
 - **Private by construction.** No cookies, no stored identifier, no fingerprinting, no consent
-  banner. Do Not Track honoured by default. A **2.6 KB** tracker. **Zero** runtime dependencies,
+  banner. Do Not Track honoured by default. A **3.0 KB** tracker. **Zero** runtime dependencies,
   enforced by CI.
 
 Deliberately absent: ad-platform attribution (ROAS/CPA) and multi-touch attribution models, because
@@ -210,7 +239,7 @@ documentation — if a cell is out of date, please [open an issue](https://githu
 | Open source | ✗ | ✓ AGPL-3.0 | ✓ MIT | ✓ AGPL-3.0 | **✓ Apache-2.0** |
 | Cookie-free, no consent banner | ✗ | ✓ | ✓ | ✓ | **✓** |
 | Services to install | — | Postgres + ClickHouse | Postgres or MySQL | Postgres + ClickHouse | **none** (one SQLite file) |
-| Tracker size (gzipped) | ~28 KB | ~1 KB | ~2 KB | ~18 KB | **2.6 KB** |
+| Tracker size (gzipped) | ~28 KB | ~1 KB | ~2 KB | ~18 KB | **3.0 KB** |
 | AI assistants as a channel | ✗ | ✓ | ✓ | ✓ | **✓** |
 | Crawler reads separated from the humans they send | ✗ | ✗ | ✗ | ✓ | **✓** |
 | **The query behind every number, in the UI** | ✗ | ✗ | ✗ | ✗ | **✓** |
@@ -268,7 +297,7 @@ becomes real, with the raw id never touching disk.
 packages/
   core      ingest · classifiers · MetricBundle · numeric guard · digest · agent verifier ·
             explore queries (sessions, users, journeys, goals, geo) · replay ingest + player
-  tracker   the browser script, 2.6 KB gzipped (+ an opt-in replay recorder, under 5 KB)
+  tracker   the browser script, 3.0 KB gzipped (+ an opt-in replay recorder, under 5 KB)
   server    one process: ingest + query API + tracker + evidence dashboard
   cli       init · site · start · digest · demo
   mcp       read-only MCP module (JSON-RPC over HTTP) for AI agents

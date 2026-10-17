@@ -66,6 +66,37 @@ export function identityId(input: { secret: string; siteId: string; raw: string 
   h.update("|identity|");
   h.update(input.siteId);
   h.update("|");
-  h.update(raw);
+  h.update(preHashIdentity(input.siteId, raw));
   return h.digest("hex").slice(0, 32);
 }
+
+/**
+ * The first of two hashes, and the one that can run in the BROWSER.
+ *
+ * `sha256(site + "|" + id)`, lower-case hex. The tracker computes it before
+ * anything is sent, so the site owner's user id — often an email address —
+ * never crosses the network to us; the server then hashes it again with its
+ * secret (`identityId`) before it is written.
+ *
+ * A value that already has this shape is taken as pre-hashed and passed
+ * through; anything else (a server-side SDK, an old tracker, a mobile app
+ * posting raw ids) is hashed here first. Both paths therefore land on the SAME
+ * stored value, so a person seen by the browser and by your backend is one
+ * person.
+ *
+ * Why the site id is in it: the same email on two of your sites produces two
+ * unrelated values. Nobody — including us — can join one person across your
+ * apps. The portfolio view adds sites together and says so.
+ *
+ * Limitation, stated: an unsalted sha256 of a known email can be confirmed by
+ * someone who already has that email and the site id. That is why this is
+ * only the transport form — what reaches disk is keyed with a secret that
+ * never leaves the server.
+ */
+export function preHashIdentity(siteId: string, raw: string): string {
+  if (PRE_HASHED.test(raw)) return raw;
+  return createHash("sha256").update(`${siteId}|${raw}`).digest("hex");
+}
+
+/** The browser's pre-hash: 64 lower-case hex characters. */
+export const PRE_HASHED = /^[0-9a-f]{64}$/;
