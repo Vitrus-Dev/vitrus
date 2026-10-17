@@ -9,6 +9,9 @@ import {
   computeRetention,
   computeLifecycle,
   computePortfolio,
+  listPeople,
+  personDetail,
+  PeopleError,
   bucketFor,
   countryFromHeaders,
   geoFromHeaders,
@@ -277,6 +280,32 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
         privacyMode: site.privacyMode,
       });
       return json({ lifecycle, window: win, bucketMs: bucketFor(win) });
+    }
+
+    // — People: one row per signed-in user, a hash and a made-up name (core/metrics/people.ts) —
+    if (path === "/api/people" || /^\/api\/people\/[a-f0-9]{32}$/.test(path)) {
+      const siteId = url.searchParams.get("site") ?? "";
+      const site = await opts.store.getSite(siteId);
+      if (!site) return json({ ok: false, reason: "site_unknown" }, 404);
+      const select = <T,>(sql: string, params?: unknown[]) => opts.store.select<T>(sql, params);
+      try {
+        if (path !== "/api/people") return json({ person: await personDetail(select, site.id, path.slice("/api/people/".length)) });
+        const p = url.searchParams;
+        return json({
+          people: await listPeople(select, {
+            siteId: site.id,
+            now: Date.now(),
+            segment: p.get("segment") ?? undefined,
+            sort: p.get("sort") ?? undefined,
+            plan: p.get("plan") ?? undefined,
+            limit: Number(p.get("limit") ?? 50),
+            offset: Number(p.get("offset") ?? 0),
+          }),
+        });
+      } catch (e) {
+        if (e instanceof PeopleError) return json({ ok: false, reason: e.message }, 400);
+        throw e;
+      }
     }
 
     // — Portfolio: every site on this server in one table —

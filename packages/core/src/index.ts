@@ -174,6 +174,17 @@ export {
   type PortfolioRow,
   type PortfolioSite,
 } from "./metrics/portfolio.ts";
+export {
+  listPeople,
+  personDetail,
+  aliasOf,
+  PeopleError,
+  NON_ACTIONS,
+  PEOPLE_SEGMENTS,
+  PEOPLE_SORTS,
+  type PeopleResult,
+  type PersonRow,
+} from "./metrics/people.ts";
 export { scrubProps, normalizePlan, isPersonalKey, isPersonalValue, PLAN_MAX } from "./pii.ts";
 export {
   importUmamiCsv,

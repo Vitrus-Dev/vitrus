@@ -277,3 +277,18 @@ describe("lifecycle and portfolio", () => {
     expect(body.portfolio.rows.map((r) => r.site.id).sort()).toEqual(["demo", "two"]);
   });
 });
+
+describe("people", () => {
+  test("/api/people lists users as hashes with made-up names; a bad sort is a 400", async () => {
+    const { handle } = await harness();
+    await handle(collect({ site: "demo", type: "event", name: "invoice_sent", url: "/app", identity: "ayse@example.com" }));
+    await Bun.sleep(5);
+    const res = await handle(new Request("http://localhost/api/people?site=demo"));
+    const text = await res.text();
+    expect(text).not.toContain("ayse");
+    const body = JSON.parse(text) as { people: { list: { rows: { alias: string; status: string; actions: number }[] } } };
+    expect(body.people.list.rows[0]).toMatchObject({ status: "one_time", actions: 1 });
+    expect(body.people.list.rows[0]!.alias).toMatch(/ · [0-9a-f]{6}$/);
+    expect((await handle(new Request("http://localhost/api/people?site=demo&sort=email"))).status).toBe(400);
+  });
+});

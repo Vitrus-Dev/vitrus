@@ -3,8 +3,10 @@
 </p>
 
 <p align="center">
-  Open-source, cookie-free web analytics. Every number carries the SQL that produced it —<br>
-  and an AI summary can't ship a number it can't prove. One process, on your own server.
+  <b>All your apps. One panel you can check.</b><br>
+  Open-source, cookie-free web and product analytics for people who ship more than one app — traffic, users,<br>
+  retention and revenue side by side, without storing who your users are. Every number carries the SQL that<br>
+  produced it, and your AI agent can ask about all of them over MCP. One process, on your own server.
 </p>
 
 <p align="center">
@@ -91,8 +93,13 @@ vitrus("plan", { plan: "pro" })    // optional: your own plan labels
   <img src=".github/assets/shot-portfolio.webp" alt="The Portfolio page: four apps side by side with visitors, active, new and lost users, signups, paying users and revenue (demo workspace, sample data)" width="100%">
 </p>
 
-- **Counted, never listed.** New, active, came back, lost, net, quick ratio, one-and-done, current plans, became and
-  stopped paying — each with its query. There is no list of people, because none is kept.
+- **Every user, under a made-up name.** Open an app and each signed-in user is a row — returning, one-time or signed
+  up only, actions, active days, visits, joined, last active; opened, actions by day and recent visits — shown as
+  "Amber Falcon · 3f9a2c", because no email or name is stored to show.
+- **Lifecycle per app.** New, active, came back, lost, net, quick ratio, one-and-done, current plans, became and
+  stopped paying — each with its query.
+- **Ask your AI.** "Which of my apps lost the most users this week?" — `get_portfolio` and `get_lifecycle` over MCP
+  answer with counts and the queries behind them.
 - **Hashed before it leaves the browser.** The script sends `sha256(site + "|" + id)`; the server hashes that again with
   a secret before storing it. Your users' ids — often emails — never reach the server. No WebCrypto, no id sent.
 - **Separate per app, by design.** The same person in two of your apps is two unrelated hashes; nobody can join them.
@@ -101,7 +108,11 @@ vitrus("plan", { plan: "pro" })    // optional: your own plan labels
   shaped like an email or phone number — are removed in the browser and again on the server, and the removal is counted.
 - **No auth provider to connect.** Works the same with Supabase, Clerk, Firebase, Better Auth or your own login.
 
-Self-hosted: `GET /api/lifecycle?site=…` and `GET /api/portfolio` on your server; over MCP, `get_lifecycle` and
+<p align="center">
+  <img src=".github/assets/shot-users.webp" alt="The Users page: returning, one-time and signed-up-only users, and a row per user under a made-up name with actions, active days and visits; one row opened to actions by day and recent visits (demo workspace, sample data)" width="100%">
+</p>
+
+Self-hosted: `GET /api/people?site=…`, `GET /api/lifecycle?site=…` and `GET /api/portfolio` on your server; over MCP, `get_lifecycle` and
 `get_portfolio`. [How it is counted →](https://vitrus.dev/docs/lifecycle)
 
 ## A whole analytics product
