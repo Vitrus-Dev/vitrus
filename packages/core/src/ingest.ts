@@ -14,7 +14,7 @@ import { headerSignals, score, serializeSignals } from "./signals.ts";
 import { classifyReferrer, parseUtm } from "./referrers.ts";
 import type { RawEvent, RequestContext, StoredEvent } from "./types.ts";
 import { parseUa } from "./ua.ts";
-import { PRE_HASHED, SESSION_WINDOW_MS, identityId, visitorId } from "./visitor.ts";
+import { PRE_HASHED, SESSION_WINDOW_MS, deviceVisitorId, identityId, visitorId } from "./visitor.ts";
 import { normalizePlan, scrubProps } from "./pii.ts";
 import type { Store } from "./store/store.ts";
 import { validateEvent } from "./validate.ts";
@@ -170,15 +170,20 @@ export class Ingestor {
     const selfHost = site?.domain || host;
     const ref = classifyReferrer({ referrer: raw.referrer ?? "", utm, selfHost });
 
-    const vid = visitorId({
-      secret: this.opts.secret,
-      siteId: raw.site,
-      ip: ctx.ip,
-      userAgent: ctx.userAgent,
-      now: ctx.now,
-    });
+    // Server time is the clock. An offline event from a native SDK says how
+    // long ago it happened (validate.ts bounds it); nothing else moves `ts`.
+    const ts = ctx.now - (raw.ago ?? 0);
+    const vid = raw.nonce
+      ? deviceVisitorId({ secret: this.opts.secret, siteId: raw.site, nonce: raw.nonce, now: ts })
+      : visitorId({
+          secret: this.opts.secret,
+          siteId: raw.site,
+          ip: ctx.ip,
+          userAgent: ctx.userAgent,
+          now: ts,
+        });
 
-    const existing = await this.store.findSession(raw.site, vid, ctx.now - SESSION_WINDOW_MS);
+    const existing = await this.store.findSession(raw.site, vid, ts - SESSION_WINDOW_MS);
     const sessionId = existing ?? crypto.randomUUID();
 
     const event: StoredEvent = {
@@ -186,7 +191,7 @@ export class Ingestor {
       siteId: raw.site,
       visitorId: vid,
       sessionId,
-      ts: ctx.now,
+      ts,
       type: raw.type,
       name: raw.type === "pageview" ? "pageview" : (raw.name ?? "event"),
       path,

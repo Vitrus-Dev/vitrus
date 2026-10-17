@@ -35,7 +35,7 @@ import { HUMAN } from "./queries.ts";
 
 /** Events the tracker or the lifecycle API sends by itself: not "actions". */
 export const NON_ACTIONS = [
-  "pageview", "identify", "signup", "login", "logout", "plan", "renewal",
+  "pageview", "identify", "signup", "login", "logout", "plan", "renewal", "app_open",
   "scroll", "web_vitals", "error", "form_submit", "form_abandon",
   "outbound_click", "file_download", "rage_click", "cta_click",
 ] as const;

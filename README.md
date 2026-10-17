@@ -54,6 +54,10 @@ Then one line in your site's `<head>`:
 <script defer data-site="SITE_ID" src="https://YOUR-HOST/v.js"></script>
 ```
 
+Mobile apps: [Vitrus for Swift](https://github.com/Vitrus-Dev/vitrus-swift) (iOS, iPadOS, macOS — Swift Package Manager)
+and [Vitrus for Flutter & Dart](https://github.com/Vitrus-Dev/vitrus-dart). Same panel, user ids hashed on the device,
+no device identifier.
+
 No Docker Compose file, no database server, no migration step. Rather not run it? **[app.vitrus.dev](https://app.vitrus.dev)**
 is the same engine, hosted, with a free plan — and **[the live demo](https://vitrus.dev/demo)** opens the full hosted
 dashboard on sample data, no account needed.

@@ -10,9 +10,26 @@ export interface UaVerdict {
   browser: string;
 }
 
+/**
+ * The native SDKs' own user-agent: `Vitrus-iOS/1.0 (iPhone; iOS 18.0)`,
+ * `Vitrus-Android/1.0 (Pixel 8; Android 14)`, `Vitrus-Dart/1.0 (iPad; iOS 17.4)`.
+ * The model before the semicolon decides the device class, the OS after it.
+ * The "browser" bucket becomes "<OS> app", so app traffic reads apart from web.
+ */
+const SDK_UA = /^vitrus-[a-z]+\/[\d.]+ \(([^;)]*);\s*([a-z]+)/;
+
 export function parseUa(userAgent: string): UaVerdict {
   const ua = (userAgent || "").toLowerCase();
   if (!ua) return { device: "unknown", os: "unknown", browser: "unknown" };
+  const sdk = SDK_UA.exec(ua);
+  if (sdk) {
+    const model = sdk[1] ?? "";
+    const osWord = sdk[2] ?? "";
+    const os = osWord === "ios" || osWord === "ipados" ? "iOS" : osWord === "android" ? "Android" : osWord === "macos" ? "macOS"
+      : osWord === "windows" ? "Windows" : osWord === "linux" ? "Linux" : "unknown";
+    const device: UaVerdict["device"] = /ipad|tablet|tab\b/.test(model) ? "tablet" : os === "iOS" || os === "Android" ? "mobile" : os === "unknown" ? "unknown" : "desktop";
+    return { device, os, browser: os === "unknown" ? "App" : `${os} app` };
+  }
 
   const os = ua.includes("windows")
     ? "Windows"

@@ -38,6 +38,19 @@ export interface RawEvent {
   identity?: string;
   /** Event payload. Values are scalars; nested objects are rejected (bloat and PII risk). */
   props?: Record<string, string | number | boolean | null>;
+  /**
+   * A native app's per-device value that the SDK regenerates every UTC day.
+   * When present it replaces IP + user-agent as the visitor hash input (see
+   * visitor.ts, deviceVisitorId): on mobile, thousands of phones share one
+   * carrier IP and one app user-agent, so the browser recipe would merge them.
+   */
+  nonce?: string;
+  /**
+   * How long ago the event happened, in ms, from the device's monotonic clock
+   * (an offline queue sent later). Server time minus this is the event time;
+   * the device's wall clock is still never read. At most AGO_MAX.
+   */
+  ago?: number;
 }
 
 /** What the server itself observed about the request. The tracker cannot send these — if it does, they are ignored. */

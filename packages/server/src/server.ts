@@ -13,6 +13,7 @@ import {
   personDetail,
   computeHeatmap,
   HeatmapError,
+  validateBatch,
   PeopleError,
   bucketFor,
   countryFromHeaders,
@@ -144,7 +145,7 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
 
     // Everything below that is not ingest reads (or, for replay settings,
     // changes) the analytics, so it needs the password when one is set.
-    const isIngest = (path === "/api/d" || path === "/api/collect") && req.method === "POST";
+    const isIngest = (path === "/api/d" || path === "/api/collect" || path === "/api/batch") && req.method === "POST";
     if (!isIngest && !authorized(req, opts.password)) {
       return new Response("password required", {
         status: 401,
@@ -191,6 +192,37 @@ export function createHandler(opts: ServerOptions): (req: Request) => Promise<Re
       if (!res.ok) return json({ ok: false, reason: res.reason }, res.status, CORS);
       // The body is deliberately empty: the tracker never reads the response, so why spend the bytes.
       return new Response(null, { status: 204, headers: CORS });
+    }
+
+    // — Batch ingest, for native SDKs flushing an offline queue —
+    // One site per batch (validateBatch); each event is validated on its own,
+    // and the answer says which were refused and why.
+    if (path === "/api/batch" && req.method === "POST") {
+      if (Number(req.headers.get("content-length") ?? 0) > 262_144) return json({ ok: false, reason: "body_too_large" }, 413, CORS);
+      const text = await req.text().catch(() => "");
+      if (text.length > 262_144) return json({ ok: false, reason: "body_too_large" }, 413, CORS);
+      let body: unknown;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        return json({ ok: false, reason: "invalid_json" }, 400, CORS);
+      }
+      const batch = validateBatch(body);
+      if (!batch.ok) return json({ ok: false, reason: batch.reason }, 400, CORS);
+      const now = Date.now();
+      const rejected: { index: number; reason: string }[] = [];
+      for (let i = 0; i < batch.events.length; i++) {
+        const res = await ingestor.ingest(batch.events[i], {
+          ip: clientIp(req),
+          userAgent: req.headers.get("user-agent") ?? "",
+          now,
+          host: url.hostname,
+          country: countryFromHeaders(req.headers),
+          geo: geoFromHeaders(req.headers),
+        });
+        if (!res.ok) rejected.push({ index: i, reason: res.reason });
+      }
+      return json({ ok: true, accepted: batch.events.length - rejected.length, rejected }, 200, CORS);
     }
 
     // — Siteler —

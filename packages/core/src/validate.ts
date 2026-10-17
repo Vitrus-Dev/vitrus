@@ -15,6 +15,8 @@ export const LIMITS = {
   lang: 35,
   tag: 40,
   identity: 200,
+  /** Offline events older than a day are refused, not back-dated further. */
+  agoMax: 86_400_000,
   propKey: 40,
   propValue: 500,
   propCount: 24,
@@ -89,6 +91,17 @@ export function validateEvent(body: unknown): ValidationResult {
   if (tag) event.tag = tag;
   const identity = str(b.identity, LIMITS.identity).trim();
   if (identity) event.identity = identity;
+  // Native SDKs (see types.ts). A malformed nonce is dropped (the event falls
+  // back to the browser recipe) rather than rejecting the event; an age out of
+  // range is a rejection, because back-dating by a wrong amount would put the
+  // event on the wrong day with nothing to show it.
+  const nonce = str(b.nonce, 64).trim();
+  if (nonce && /^[A-Za-z0-9_-]{16,64}$/.test(nonce)) event.nonce = nonce;
+  if (b.ago !== undefined) {
+    if (typeof b.ago !== "number" || !Number.isFinite(b.ago) || b.ago < 0) return { ok: false, reason: "ago_invalid" };
+    if (b.ago > LIMITS.agoMax) return { ok: false, reason: "ago_too_old" };
+    if (b.ago > 0) event.ago = Math.round(b.ago);
+  }
   // `hostname` arrives from the client and is stored as the client said it —
   // the same trust as the url it came with. Anything that is not a plausible
   // hostname is dropped rather than stored, so the hostnames table can never
@@ -97,6 +110,28 @@ export function validateEvent(body: unknown): ValidationResult {
   if (hostname && /^[a-z0-9.-]{1,253}$/.test(hostname)) event.hostname = hostname.replace(/^www\./, "");
 
   return { ok: true, event };
+}
+
+/** Most events one batch may carry (native SDKs flush their offline queue in batches). */
+export const BATCH_MAX = 50;
+
+/**
+ * `{ events: [...] }` from a native SDK. Shape only: each event is validated
+ * on its own by the ingestor, so one bad event never sinks the rest. Every
+ * event must name the same site — a batch is one app's queue, and a mixed one
+ * would let a single request spend another site's quota.
+ */
+export function validateBatch(body: unknown): { ok: true; site: string; events: unknown[] } | { ok: false; reason: string } {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) return { ok: false, reason: "body_not_object" };
+  const events = (body as { events?: unknown }).events;
+  if (!Array.isArray(events) || events.length === 0) return { ok: false, reason: "events_missing" };
+  if (events.length > BATCH_MAX) return { ok: false, reason: "batch_too_large" };
+  const site = (events[0] as { site?: unknown } | null)?.site;
+  if (typeof site !== "string" || !site) return { ok: false, reason: "site_missing" };
+  for (const e of events) {
+    if ((e as { site?: unknown } | null)?.site !== site) return { ok: false, reason: "batch_mixed_sites" };
+  }
+  return { ok: true, site, events };
 }
 
 /** Largest single amount accepted. Above it is almost certainly a unit mistake (cents sent as units). */

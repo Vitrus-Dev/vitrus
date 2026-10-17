@@ -39,6 +39,24 @@ export function visitorId(input: {
   return h.digest("hex").slice(0, 32);
 }
 
+/**
+ * The visitor hash for a native app: the SDK's daily device value instead of
+ * IP + user-agent. The day is still in the hash, so the value changes at UTC
+ * midnight whatever the device sends — a SDK that never rotated its nonce
+ * would still not make a person followable across days on the server.
+ */
+export function deviceVisitorId(input: { secret: string; siteId: string; nonce: string; now: number }): string {
+  const h = createHash("sha256");
+  h.update(input.secret);
+  h.update("|device|");
+  h.update(dayKey(input.now));
+  h.update("|");
+  h.update(input.siteId);
+  h.update("|");
+  h.update(input.nonce);
+  return h.digest("hex").slice(0, 32);
+}
+
 /** Session window: 30 minutes after the last event starts a new session (industry standard). */
 export const SESSION_WINDOW_MS = 30 * 60 * 1000;
 

@@ -42,7 +42,7 @@ export {
   type PrivacyMode,
   type PrivacyPolicy,
 } from "./privacy.ts";
-export { visitorId, identityId, preHashIdentity, PRE_HASHED, dayKey, SESSION_WINDOW_MS } from "./visitor.ts";
+export { visitorId, deviceVisitorId, identityId, preHashIdentity, PRE_HASHED, dayKey, SESSION_WINDOW_MS } from "./visitor.ts";
 export { validateEvent, LIMITS, type ValidationResult } from "./validate.ts";
 export { Ingestor, splitUrl, type IngestOptions, type IngestResult } from "./ingest.ts";
 export { type Store, SCHEMA_VERSION } from "./store/store.ts";
@@ -156,7 +156,7 @@ export {
   REVENUE_DIMENSIONS,
   type RevenueResult,
 } from "./metrics/revenue.ts";
-export { REVENUE_MAX } from "./validate.ts";
+export { REVENUE_MAX, BATCH_MAX, validateBatch } from "./validate.ts";
 export {
   computeLifecycle,
   ACCOUNTING_SQL,

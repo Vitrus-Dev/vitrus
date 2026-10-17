@@ -302,3 +302,27 @@ describe("heatmaps", () => {
     expect((await handle(new Request("http://localhost/api/heatmap?site=demo&device=watch"))).status).toBe(400);
   });
 });
+
+describe("batch ingest", () => {
+  test("/api/batch stores each valid event, reports the refused ones, and needs no password", async () => {
+    const store = new SqliteStore(":memory:");
+    await store.init();
+    await store.upsertSite(SITE);
+    const handle = createHandler({ store, secret: "s", password: "pw" });
+    const ev = (extra: Record<string, unknown> = {}) => ({ site: "demo", type: "pageview", url: "/screen/Home", nonce: "a1b2c3d4e5f6a7b8c9d0", ...extra });
+    const res = await handle(new Request("http://localhost/api/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": "Vitrus-iOS/0.1 (iPhone; iOS 18.0)" },
+      body: JSON.stringify({ events: [ev({ ago: 60_000 }), ev({ ago: -5 }), ev({ type: "event", name: "invoice_sent" })] }),
+    }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, accepted: 2, rejected: [{ index: 1, reason: "ago_invalid" }] });
+    const rows = await store.select<{ browser: string }>(`SELECT browser FROM events`);
+    expect(rows.map((r) => r.browser)).toEqual(["iOS app", "iOS app"]);
+    const mixed = await handle(new Request("http://localhost/api/batch", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ events: [ev(), { ...ev(), site: "other" }] }),
+    }));
+    expect(mixed.status).toBe(400);
+  });
+});
