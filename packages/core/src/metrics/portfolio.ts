@@ -60,6 +60,8 @@ export interface PortfolioRow {
   revenue: { currency: string; revenue: number; orders: number }[];
   /** Visitors per bucket across the range (`window.bucket` ms each, UTC-aligned), oldest first. */
   series: number[];
+  /** Signed-in people active per bucket, same buckets as `series`. Null where people are not measured (strict mode). */
+  userSeries: number[] | null;
   /** Visitors per platform. A visitor seen on two platforms counts on both. */
   platforms: Record<Platform, number>;
 }
@@ -86,7 +88,7 @@ export interface PortfolioResult {
     revenue: { currency: string; revenue: number; orders: number }[];
   };
   /** One entry per column: the query that produced it. */
-  evidence: Record<"traffic" | "previous" | "people" | "events" | "plans" | "paying" | "revenue" | "series" | "platforms", Query>;
+  evidence: Record<"traffic" | "previous" | "people" | "events" | "plans" | "paying" | "revenue" | "series" | "userSeries" | "platforms", Query>;
 }
 
 export class PortfolioError extends Error {}
@@ -205,6 +207,14 @@ SELECT site_id,
       GROUP BY site_id, b`,
     [bucketFrom, bucket, ...idParams, o.from, o.to]
   );
+  const userSeries = await run<{ site_id: string; b: number; users: number }>(
+    select,
+    "signed-in people active per site and day (or week)",
+    `SELECT site_id, CAST((ts - ?) / ? AS INTEGER) AS b, COUNT(DISTINCT identity) AS users
+       FROM events WHERE site_id IN ${inList} AND ts >= ? AND ts < ? AND identity <> '' AND ${HUMAN}
+      GROUP BY site_id, b`,
+    [bucketFrom, bucket, ...idParams, o.from, o.to]
+  );
   // The SDKs send "Vitrus-iOS/…", which ua.ts files under the browser "iOS app" — so app traffic needs no extra column.
   const platforms = await run<{ site_id: string; platform: Platform; visitors: number }>(
     select,
@@ -247,6 +257,7 @@ SELECT site_id,
         .filter((r) => r.site_id === site.id && r.currency)
         .map((r) => ({ currency: r.currency, revenue: Math.round(n(r.revenue) * 100) / 100, orders: n(r.orders) })),
       series: Array.from({ length: buckets }, () => 0),
+      userSeries: strict.has(site.id) ? null : Array.from({ length: buckets }, () => 0),
       platforms: { web: 0, ios: 0, android: 0, app: 0 },
     };
   });
@@ -256,6 +267,11 @@ SELECT site_id,
     const row = rowOf.get(r.site_id);
     const i = n(r.b);
     if (row && i >= 0 && i < row.series.length) row.series[i] = n(r.visitors);
+  }
+  for (const r of userSeries.rows) {
+    const us = rowOf.get(r.site_id)?.userSeries;
+    const i = n(r.b);
+    if (us && i >= 0 && i < us.length) us[i] = n(r.users);
   }
   for (const r of platforms.rows) {
     const row = rowOf.get(r.site_id);
@@ -290,6 +306,6 @@ SELECT site_id,
         .map(([currency, v]) => ({ currency, revenue: Math.round(v.revenue * 100) / 100, orders: v.orders }))
         .sort((a, b) => b.revenue - a.revenue),
     },
-    evidence: { traffic, previous, people, events, plans, paying, revenue, series, platforms },
+    evidence: { traffic, previous, people, events, plans, paying, revenue, series, userSeries, platforms },
   };
 }

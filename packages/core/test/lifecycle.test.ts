@@ -269,6 +269,11 @@ describe("computePortfolio", () => {
     expect(row.series.length).toBe(Math.ceil((NOW - p.window.bucketFrom) / DAY));
     expect(row.series.reduce((a, b) => a + b, 0)).toBe(5);
     expect(row.platforms).toEqual({ web: 2, ios: 2, android: 1, app: 0 });
+    expect(row.userSeries?.reduce((a, b) => a + b, 0)).toBe(0); // nobody signed in
+    await ing.ingest({ site: SITE.id, type: "pageview", url: "/app", identity: "u1" }, { ip: "198.51.100.9", userAgent: IOS, now: NOW - 2000, host: SITE.domain });
+    const withUser = await computePortfolio((s, prm) => store.select(s, prm), { sites: [{ id: SITE.id, name: "Demo", domain: SITE.domain }], from: FROM, to: NOW });
+    expect(withUser.rows[0]!.userSeries!.at(-1)).toBe(1);
+    expect(withUser.evidence.userSeries.sql).toContain("COUNT(DISTINCT identity)");
     expect(p.evidence.platforms.sql).toContain("'iOS app'");
     expect(p.evidence.series.sql).toContain("GROUP BY site_id, b");
     // a long range switches to weekly points
