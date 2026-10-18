@@ -3,7 +3,7 @@
   "version": "0.11.1",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus MCP server — read-only analytics tools where every answer carries the query that produced it.",
+  "description": "Read-only MCP tools for Vitrus analytics; every number comes back with its SQL.",
   "exports": {
     ".": "./src/server.ts",
     "./tools": "./src/tools.ts"
@@ -25,7 +25,23 @@
     "directory": "packages/mcp"
   },
   "homepage": "https://vitrus.dev",
-  "bugs": {
-    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
-  }
+  "bugs": "https://github.com/Vitrus-Dev/vitrus/issues",
+  "keywords": [
+    "analytics",
+    "privacy",
+    "cookieless",
+    "web-analytics",
+    "bun",
+    "sqlite",
+    "mcp"
+  ],
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ]
 }

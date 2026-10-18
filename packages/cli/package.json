@@ -3,7 +3,7 @@
   "version": "0.11.1",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus CLI — init, site, start, digest, demo.",
+  "description": "vitrus — self-hosted, cookie-free analytics in one process: init, site, start, digest.",
   "bin": {
     "vitrus": "./src/cli.ts"
   },
@@ -25,7 +25,23 @@
     "directory": "packages/cli"
   },
   "homepage": "https://vitrus.dev",
-  "bugs": {
-    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
-  }
+  "bugs": "https://github.com/Vitrus-Dev/vitrus/issues",
+  "keywords": [
+    "analytics",
+    "privacy",
+    "cookieless",
+    "web-analytics",
+    "bun",
+    "sqlite",
+    "mcp"
+  ],
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ]
 }

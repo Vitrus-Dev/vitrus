@@ -7,7 +7,7 @@
     },
     "packages/cli": {
       "name": "@vitrus/cli",
-      "version": "0.3.0",
+      "version": "0.11.1",
       "bin": {
         "vitrus": "./src/cli.ts",
       },
@@ -22,7 +22,7 @@
     },
     "packages/core": {
       "name": "@vitrus/core",
-      "version": "0.3.0",
+      "version": "0.11.1",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.7.0",
@@ -30,7 +30,7 @@
     },
     "packages/mcp": {
       "name": "@vitrus/mcp",
-      "version": "0.3.0",
+      "version": "0.11.1",
       "dependencies": {
         "@vitrus/core": "workspace:*",
       },
@@ -41,9 +41,10 @@
     },
     "packages/server": {
       "name": "@vitrus/server",
-      "version": "0.3.0",
+      "version": "0.11.1",
       "dependencies": {
         "@vitrus/core": "workspace:*",
+        "@vitrus/tracker": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -52,7 +53,7 @@
     },
     "packages/tracker": {
       "name": "@vitrus/tracker",
-      "version": "0.3.0",
+      "version": "0.11.1",
       "devDependencies": {
         "@types/bun": "latest",
         "happy-dom": "^20.14.5",
@@ -94,5 +95,17 @@
     "whatwg-mimetype": ["whatwg-mimetype@3.0.0", "", {}, "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="],
 
     "ws": ["ws@8.21.3", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw=="],
+
+    "@vitrus/core/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
+
+    "@vitrus/server/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
+
+    "@vitrus/tracker/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
+
+    "@vitrus/core/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
+
+    "@vitrus/server/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
+
+    "@vitrus/tracker/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
   }
 }

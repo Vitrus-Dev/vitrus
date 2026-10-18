@@ -3,7 +3,7 @@
   "version": "0.11.1",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Vitrus single-process server — ingest + query API + tracker delivery + the evidence dashboard.",
+  "description": "Single-process Vitrus server: ingest, query API, tracker and dashboard over one SQLite file.",
   "exports": {
     ".": "./src/server.ts"
   },
@@ -13,7 +13,8 @@
     "start": "bun run src/server.ts"
   },
   "dependencies": {
-    "@vitrus/core": "workspace:*"
+    "@vitrus/core": "workspace:*",
+    "@vitrus/tracker": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -25,7 +26,23 @@
     "directory": "packages/server"
   },
   "homepage": "https://vitrus.dev",
-  "bugs": {
-    "url": "https://github.com/Vitrus-Dev/vitrus/issues"
-  }
+  "bugs": "https://github.com/Vitrus-Dev/vitrus/issues",
+  "keywords": [
+    "analytics",
+    "privacy",
+    "cookieless",
+    "web-analytics",
+    "bun",
+    "sqlite",
+    "mcp"
+  ],
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ]
 }
