@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "dev.vitrus/analytics",
   "title": "Vitrus analytics",
-  "description": "Read-only web analytics — AI traffic, revenue, goals, funnels — with the SQL behind every number.",
-  "version": "0.6.0",
+  "description": "Read-only analytics for all your apps: users, AI traffic, revenue, with the SQL behind every number.",
+  "version": "0.11.1",
   "websiteUrl": "https://vitrus.dev/docs/mcp",
   "repository": {
     "url": "https://github.com/Vitrus-Dev/vitrus",
