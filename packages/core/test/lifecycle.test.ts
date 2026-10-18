@@ -251,6 +251,32 @@ describe("computePortfolio", () => {
     expect(p.evidence.people.sql).toContain("GROUP BY site_id, identity");
   });
 
+  test("a visitor line per site and a web/iOS/Android split, both counted by SQL that is returned", async () => {
+    const store = await freshStore();
+    const ing = ingestorFor(store);
+    const IOS = "Vitrus-iOS/0.1.0 (iPhone; iOS 18.0) Northwind/2.3";
+    const ANDROID = "Vitrus-Dart/0.1.0 (Phone; Android 14) Northwind/2.3";
+    const hit = (ua: string, ip: string, now: number) =>
+      ing.ingest({ site: SITE.id, type: "pageview", url: "/screen/Home" }, { ip, userAgent: ua, now, host: SITE.domain });
+    await hit(CHROME, "198.51.100.1", NOW - 6 * DAY + 1000);
+    await hit(CHROME, "198.51.100.2", NOW - DAY + 1000);
+    await hit(IOS, "198.51.100.3", NOW - DAY + 2000);
+    await hit(IOS, "198.51.100.4", NOW - DAY + 3000);
+    await hit(ANDROID, "198.51.100.5", NOW - 1000);
+    const p = await computePortfolio((s, prm) => store.select(s, prm), { sites: [{ id: SITE.id, name: "Demo", domain: SITE.domain }], from: FROM, to: NOW });
+    const row = p.rows[0]!;
+    expect(p.window.bucket).toBe(DAY);
+    expect(row.series.length).toBe(Math.ceil((NOW - p.window.bucketFrom) / DAY));
+    expect(row.series.reduce((a, b) => a + b, 0)).toBe(5);
+    expect(row.platforms).toEqual({ web: 2, ios: 2, android: 1, app: 0 });
+    expect(p.evidence.platforms.sql).toContain("'iOS app'");
+    expect(p.evidence.series.sql).toContain("GROUP BY site_id, b");
+    // a long range switches to weekly points
+    const long = await computePortfolio((s, prm) => store.select(s, prm), { sites: [{ id: SITE.id, name: "Demo", domain: SITE.domain }], from: NOW - 180 * DAY, to: NOW });
+    expect(long.window.bucket).toBe(7 * DAY);
+    expect(long.rows[0]!.series.length).toBeLessThanOrEqual(27);
+  });
+
   test("an empty workspace is valid SQL and all zeros only where zero was measured", async () => {
     const store = await freshStore();
     const p = await computePortfolio((s, prm) => store.select(s, prm), { sites: [], from: FROM, to: NOW });

@@ -58,10 +58,20 @@ export interface PortfolioRow {
   stoppedPaying: number;
   paying: number;
   revenue: { currency: string; revenue: number; orders: number }[];
+  /** Visitors per bucket across the range (`window.bucket` ms each, UTC-aligned), oldest first. */
+  series: number[];
+  /** Visitors per platform. A visitor seen on two platforms counts on both. */
+  platforms: Record<Platform, number>;
 }
 
+export type Platform = "web" | "ios" | "android" | "app";
+export const PLATFORMS: readonly Platform[] = ["web", "ios", "android", "app"];
+const DAY = 86400000;
+/** Up to ~3 months a point per day; longer ranges get a point per week so the line stays readable. */
+export const bucketOf = (span: number): number => (span <= 92 * DAY ? DAY : 7 * DAY);
+
 export interface PortfolioResult {
-  window: { from: number; to: number; previousFrom: number };
+  window: { from: number; to: number; previousFrom: number; bucket: number; bucketFrom: number };
   rows: PortfolioRow[];
   totals: {
     sites: number;
@@ -76,7 +86,7 @@ export interface PortfolioResult {
     revenue: { currency: string; revenue: number; orders: number }[];
   };
   /** One entry per column: the query that produced it. */
-  evidence: Record<"traffic" | "previous" | "people" | "events" | "plans" | "paying" | "revenue", Query>;
+  evidence: Record<"traffic" | "previous" | "people" | "events" | "plans" | "paying" | "revenue" | "series" | "platforms", Query>;
 }
 
 export class PortfolioError extends Error {}
@@ -184,6 +194,30 @@ SELECT site_id,
     [...idParams, o.from, o.to]
   );
 
+  const bucket = bucketOf(span);
+  const bucketFrom = Math.floor(o.from / bucket) * bucket;
+  const buckets = Math.max(1, Math.ceil((o.to - bucketFrom) / bucket));
+  const series = await run<{ site_id: string; b: number; visitors: number }>(
+    select,
+    "visitors per site and day (or week, past three months)",
+    `SELECT site_id, CAST((ts - ?) / ? AS INTEGER) AS b, COUNT(DISTINCT visitor_id) AS visitors
+       FROM events WHERE site_id IN ${inList} AND ts >= ? AND ts < ? AND ${HUMAN}
+      GROUP BY site_id, b`,
+    [bucketFrom, bucket, ...idParams, o.from, o.to]
+  );
+  // The SDKs send "Vitrus-iOS/…", which ua.ts files under the browser "iOS app" — so app traffic needs no extra column.
+  const platforms = await run<{ site_id: string; platform: Platform; visitors: number }>(
+    select,
+    "visitors per site and platform",
+    `SELECT site_id,
+            CASE WHEN browser = 'iOS app' THEN 'ios' WHEN browser = 'Android app' THEN 'android'
+                 WHEN browser = 'App' OR browser LIKE '% app' THEN 'app' ELSE 'web' END AS platform,
+            COUNT(DISTINCT visitor_id) AS visitors
+       FROM events WHERE site_id IN ${inList} AND ts >= ? AND ts < ? AND ${HUMAN}
+      GROUP BY site_id, platform`,
+    [...idParams, o.from, o.to]
+  );
+
   const by = <T extends { site_id: string }>(q: Query<T>) => new Map(q.rows.map((r) => [r.site_id, r]));
   const tMap = by(traffic), pMap = by(previous), peMap = by(people), eMap = by(events), plMap = by(plans), payMap = by(paying);
   const strict = new Set(o.strict ?? []);
@@ -212,8 +246,21 @@ SELECT site_id,
       revenue: revenue.rows
         .filter((r) => r.site_id === site.id && r.currency)
         .map((r) => ({ currency: r.currency, revenue: Math.round(n(r.revenue) * 100) / 100, orders: n(r.orders) })),
+      series: Array.from({ length: buckets }, () => 0),
+      platforms: { web: 0, ios: 0, android: 0, app: 0 },
     };
   });
+
+  const rowOf = new Map(rows.map((r) => [r.site.id, r]));
+  for (const r of series.rows) {
+    const row = rowOf.get(r.site_id);
+    const i = n(r.b);
+    if (row && i >= 0 && i < row.series.length) row.series[i] = n(r.visitors);
+  }
+  for (const r of platforms.rows) {
+    const row = rowOf.get(r.site_id);
+    if (row && r.platform in row.platforms) row.platforms[r.platform] = n(r.visitors);
+  }
 
   const cur = new Map<string, { revenue: number; orders: number }>();
   for (const r of rows) {
@@ -227,7 +274,7 @@ SELECT site_id,
   const sum = (f: (r: PortfolioRow) => number) => rows.reduce((a, r) => a + f(r), 0);
 
   return {
-    window: { from: o.from, to: o.to, previousFrom: pfrom },
+    window: { from: o.from, to: o.to, previousFrom: pfrom, bucket, bucketFrom },
     rows,
     totals: {
       sites: rows.length,
@@ -243,6 +290,6 @@ SELECT site_id,
         .map(([currency, v]) => ({ currency, revenue: Math.round(v.revenue * 100) / 100, orders: v.orders }))
         .sort((a, b) => b.revenue - a.revenue),
     },
-    evidence: { traffic, previous, people, events, plans, paying, revenue },
+    evidence: { traffic, previous, people, events, plans, paying, revenue, series, platforms },
   };
 }

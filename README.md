@@ -94,7 +94,7 @@ vitrus("plan", { plan: "pro" })    // optional: your own plan labels
 ```
 
 <p align="center">
-  <img src=".github/assets/shot-portfolio.webp" alt="The Portfolio page: four apps side by side with visitors, active, new and lost users, signups, paying users and revenue (demo workspace, sample data)" width="100%">
+  <img src=".github/assets/shot-portfolio.webp" alt="The Portfolio page: one card per app with a visitor trend line, Web/iOS/Android badges, active, new and lost users, paying users and revenue (demo workspace, sample data)" width="100%">
 </p>
 
 - **Every user, under a made-up name.** Open an app and each signed-in user is a row — returning, one-time or signed
