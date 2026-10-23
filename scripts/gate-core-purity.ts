@@ -77,7 +77,7 @@ const corePkg = (await Bun.file(new URL("../packages/core/package.json", import.
   dependencies?: Record<string, string>;
 };
 if (corePkg.dependencies && Object.keys(corePkg.dependencies).length > 0) {
-  violations.push(`I4  @vitrus/core acquired a runtime dependency: ${Object.keys(corePkg.dependencies).join(", ")}`);
+  violations.push(`I4  @vitrus-dev/core acquired a runtime dependency: ${Object.keys(corePkg.dependencies).join(", ")}`);
 }
 
 console.log(`core-purity gate — ${files.length} files, ${RULES.length} rules`);

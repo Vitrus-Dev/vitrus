@@ -1,5 +1,5 @@
 {
-  "name": "@vitrus/cli",
+  "name": "@vitrus-dev/cli",
   "version": "0.11.1",
   "type": "module",
   "license": "Apache-2.0",
@@ -12,8 +12,8 @@
     "vitrus": "bun run src/cli.ts"
   },
   "dependencies": {
-    "@vitrus/core": "workspace:*",
-    "@vitrus/server": "workspace:*"
+    "@vitrus-dev/core": "workspace:*",
+    "@vitrus-dev/server": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

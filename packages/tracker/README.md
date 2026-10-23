@@ -1,4 +1,4 @@
-# @vitrus/tracker
+# @vitrus-dev/tracker
 
 The [Vitrus](https://vitrus.dev) browser script: 3.0 KB gzipped, no cookies, nothing stored in the browser. `dist/v.js` is the tracker; `dist/r.js` is the opt-in session recorder (every text node and input masked by default).
 

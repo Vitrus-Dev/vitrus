@@ -15,7 +15,7 @@
 // metric added to `metrics/queries.ts` appears here without anyone remembering
 // to come back.
 
-import { FAVICON_DATA_URI, REPLAY_PLAYER_JS, type Site } from "@vitrus/core";
+import { FAVICON_DATA_URI, REPLAY_PLAYER_JS, type Site } from "@vitrus-dev/core";
 
 export function dashboardHtml(sites: Site[]): string {
   const options = sites.length

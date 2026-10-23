@@ -4,7 +4,7 @@
 //   2. It is READ-ONLY and site access is enforced per call.
 
 import { beforeEach, describe, expect, test } from "bun:test";
-import { Ingestor, SqliteStore, type Site } from "@vitrus/core";
+import { Ingestor, SqliteStore, type Site } from "@vitrus-dev/core";
 import { callTool, TOOLS, ToolError, type ToolContext } from "../src/tools.ts";
 import { handleRpc, MCP_PROTOCOL_VERSION } from "../src/server.ts";
 

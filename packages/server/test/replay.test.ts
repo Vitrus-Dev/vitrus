@@ -1,7 +1,7 @@
 // packages/server/test/replay.test.ts — session replay works self-hosted, end to end over HTTP.
 import { describe, expect, test } from "bun:test";
 import { gzipSync } from "bun";
-import { SqliteStore, type Site } from "@vitrus/core";
+import { SqliteStore, type Site } from "@vitrus-dev/core";
 import { dashboardHtml } from "../src/dashboard.ts";
 import { createHandler } from "../src/server.ts";
 

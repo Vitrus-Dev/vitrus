@@ -21,8 +21,8 @@ import {
   windowOf,
   type LlmClient,
   type Site,
-} from "@vitrus/core";
-import { OPEN_DASHBOARD_WARNING, startServer } from "@vitrus/server";
+} from "@vitrus-dev/core";
+import { OPEN_DASHBOARD_WARNING, startServer } from "@vitrus-dev/server";
 
 const DB = process.env.VITRUS_DB ?? "./vitrus.db";
 

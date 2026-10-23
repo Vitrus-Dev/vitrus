@@ -29,7 +29,7 @@ import {
   replaySiteApi,
   type Site,
   type Store,
-} from "@vitrus/core";
+} from "@vitrus-dev/core";
 import { dashboardHtml } from "./dashboard.ts";
 
 export interface ServerOptions {

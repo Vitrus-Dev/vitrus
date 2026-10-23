@@ -1,5 +1,5 @@
 {
-  "name": "@vitrus/mcp",
+  "name": "@vitrus-dev/mcp",
   "version": "0.11.1",
   "type": "module",
   "license": "Apache-2.0",
@@ -13,7 +13,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@vitrus/core": "workspace:*"
+    "@vitrus-dev/core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

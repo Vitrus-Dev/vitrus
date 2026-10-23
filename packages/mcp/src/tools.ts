@@ -37,7 +37,7 @@ import {
   type Filter,
   type Goal,
   type Store,
-} from "@vitrus/core";
+} from "@vitrus-dev/core";
 
 export interface ToolContext {
   store: Store;

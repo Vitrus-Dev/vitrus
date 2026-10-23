@@ -1,4 +1,4 @@
-# @vitrus/mcp
+# @vitrus-dev/mcp
 
 Read-only [MCP](https://modelcontextprotocol.io) tools for Vitrus analytics: 17 tools, including `get_portfolio` and `get_lifecycle`. Every number comes back with the SQL, parameters and rows that produced it, so an agent can cite instead of assert.
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { SqliteStore, type Site } from "@vitrus/core";
+import { SqliteStore, type Site } from "@vitrus-dev/core";
 import { dashboardHtml } from "../src/dashboard.ts";
 import { clientIp, createHandler } from "../src/server.ts";
 
@@ -226,7 +226,7 @@ describe("the self-hosted dashboard shows the whole engine", () => {
 
 describe("VITRUS_PASSWORD", () => {
   test("dashboard and read API need the password; tracker and ingest stay public", async () => {
-    const { SqliteStore } = await import("@vitrus/core");
+    const { SqliteStore } = await import("@vitrus-dev/core");
     const { createHandler } = await import("../src/server.ts");
     const store = new SqliteStore(":memory:");
     await store.init();

@@ -3,7 +3,7 @@
 // still the same allow-list.
 
 import { beforeEach, describe, expect, test } from "bun:test";
-import { Ingestor, SqliteStore, type Site } from "@vitrus/core";
+import { Ingestor, SqliteStore, type Site } from "@vitrus-dev/core";
 import { callTool, TOOLS, ToolError, type ToolContext } from "../src/tools.ts";
 
 const NOW = Date.UTC(2026, 9, 7, 12);

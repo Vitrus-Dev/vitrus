@@ -39,14 +39,15 @@
 You need [Bun](https://bun.sh) 1.3 or newer. That is the whole list.
 
 ```bash
-git clone https://github.com/Vitrus-Dev/vitrus && cd vitrus
-bun install && bun run build:tracker
-alias vitrus="bun $PWD/packages/cli/src/cli.ts"
+bun install -g @vitrus-dev/cli
 
 vitrus init                                   # creates ./vitrus.db and a secret salt
 vitrus site add "My site" example.com         # prints your script tag
 VITRUS_PASSWORD="a long secret" vitrus start  # ingest + dashboard on http://localhost:3000
 ```
+
+From source instead: `git clone https://github.com/Vitrus-Dev/vitrus && cd vitrus && bun install && bun run build:tracker`,
+then run `bun packages/cli/src/cli.ts` wherever this says `vitrus`.
 
 Then one line in your site's `<head>`:
 

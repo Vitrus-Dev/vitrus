@@ -6,14 +6,14 @@
       "name": "vitrus",
     },
     "packages/cli": {
-      "name": "@vitrus/cli",
+      "name": "@vitrus-dev/cli",
       "version": "0.11.1",
       "bin": {
         "vitrus": "./src/cli.ts",
       },
       "dependencies": {
-        "@vitrus/core": "workspace:*",
-        "@vitrus/server": "workspace:*",
+        "@vitrus-dev/core": "workspace:*",
+        "@vitrus-dev/server": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -21,7 +21,7 @@
       },
     },
     "packages/core": {
-      "name": "@vitrus/core",
+      "name": "@vitrus-dev/core",
       "version": "0.11.1",
       "devDependencies": {
         "@types/bun": "latest",
@@ -29,10 +29,10 @@
       },
     },
     "packages/mcp": {
-      "name": "@vitrus/mcp",
+      "name": "@vitrus-dev/mcp",
       "version": "0.11.1",
       "dependencies": {
-        "@vitrus/core": "workspace:*",
+        "@vitrus-dev/core": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -40,11 +40,11 @@
       },
     },
     "packages/server": {
-      "name": "@vitrus/server",
+      "name": "@vitrus-dev/server",
       "version": "0.11.1",
       "dependencies": {
-        "@vitrus/core": "workspace:*",
-        "@vitrus/tracker": "workspace:*",
+        "@vitrus-dev/core": "workspace:*",
+        "@vitrus-dev/tracker": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -52,7 +52,7 @@
       },
     },
     "packages/tracker": {
-      "name": "@vitrus/tracker",
+      "name": "@vitrus-dev/tracker",
       "version": "0.11.1",
       "devDependencies": {
         "@types/bun": "latest",
@@ -62,7 +62,7 @@
     },
   },
   "packages": {
-    "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
+    "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
     "@types/node": ["@types/node@26.6.2", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-X1P21scMv4zGKLYqjdGjaKa7COa0RKVYYZZN/NfvLQ1JegxFhdhpZG/Lyn8AXx6CDUavKAd11v6BvfpkDByK8g=="],
 
@@ -70,19 +70,19 @@
 
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
-    "@vitrus/cli": ["@vitrus/cli@workspace:packages/cli"],
+    "@vitrus-dev/cli": ["@vitrus-dev/cli@workspace:packages/cli"],
 
-    "@vitrus/core": ["@vitrus/core@workspace:packages/core"],
+    "@vitrus-dev/core": ["@vitrus-dev/core@workspace:packages/core"],
 
-    "@vitrus/mcp": ["@vitrus/mcp@workspace:packages/mcp"],
+    "@vitrus-dev/mcp": ["@vitrus-dev/mcp@workspace:packages/mcp"],
 
-    "@vitrus/server": ["@vitrus/server@workspace:packages/server"],
+    "@vitrus-dev/server": ["@vitrus-dev/server@workspace:packages/server"],
 
-    "@vitrus/tracker": ["@vitrus/tracker@workspace:packages/tracker"],
+    "@vitrus-dev/tracker": ["@vitrus-dev/tracker@workspace:packages/tracker"],
 
     "buffer-image-size": ["buffer-image-size@0.6.4", "", { "dependencies": { "@types/node": "*" } }, "sha512-nEh+kZOPY1w+gcCMobZ6ETUp9WfibndnosbpwB1iJk/8Gt5ZF2bhS6+B6bPYz424KtwsR6Rflc3tCz1/ghX2dQ=="],
 
-    "bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
+    "bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
@@ -95,17 +95,5 @@
     "whatwg-mimetype": ["whatwg-mimetype@3.0.0", "", {}, "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="],
 
     "ws": ["ws@8.21.3", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw=="],
-
-    "@vitrus/core/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
-
-    "@vitrus/server/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
-
-    "@vitrus/tracker/@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
-
-    "@vitrus/core/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
-
-    "@vitrus/server/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
-
-    "@vitrus/tracker/@types/bun/bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
   }
 }
